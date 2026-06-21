@@ -7,7 +7,7 @@ service cloud.firestore {
     }
 
     function myRole() {
-      return isSignedIn()
+      return (isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)))
         ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
         : null;
     }
@@ -28,6 +28,16 @@ service cloud.firestore {
         coachData.userId == request.auth.uid ||
         coachData.email.lower() == request.auth.token.email.lower()
       );
+    }
+
+    // Defensive wrapper for checking coach ownership by id when the coach
+    // document might not exist — accessing .data on a get() result for a
+    // non-existent document can throw, and an error anywhere inside an OR
+    // expression can cause the WHOLE expression to be denied even when a
+    // different clause in that same OR would have legitimately passed.
+    function ownsCoachById(coachId) {
+      return exists(/databases/$(database)/documents/coaches/$(coachId)) &&
+        ownsCoach(get(/databases/$(database)/documents/coaches/$(coachId)).data);
     }
 
     // NOTE ON READS: the app currently fetches each whole collection client-
@@ -73,8 +83,12 @@ service cloud.firestore {
       // Anyone signed in can update ONLY rating/reviewCount (needed so a
       // parent leaving a review can update the coach's aggregate score) —
       // everything else about a coach's profile still requires ownership.
-      allow update: if isAdmin() || ownsCoach(resource.data) ||
-        (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating', 'reviewCount']));
+      // The rating-only check is listed first and is self-contained (no
+      // get() calls), so it can never be sunk by an error from the other
+      // clauses.
+      allow update: if
+        (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating', 'reviewCount'])) ||
+        isAdmin() || ownsCoach(resource.data);
       allow delete: if false;
     }
 
@@ -83,9 +97,9 @@ service cloud.firestore {
       allow create: if isSeedBookingId(bookingId) ||
         (isSignedIn() && request.resource.data.parentId == request.auth.uid);
       allow update: if isSignedIn() && (
-        isAdmin() ||
         resource.data.parentId == request.auth.uid ||
-        ownsCoach(get(/databases/$(database)/documents/coaches/$(resource.data.coachId)).data)
+        isAdmin() ||
+        ownsCoachById(resource.data.coachId)
       );
       allow delete: if false;
     }
@@ -101,6 +115,7 @@ service cloud.firestore {
       allow create: if isSignedIn() &&
         request.resource.data.parentId == request.auth.uid &&
         reviewId == request.resource.data.bookingId &&
+        exists(/databases/$(database)/documents/bookings/$(reviewId)) &&
         get(/databases/$(database)/documents/bookings/$(reviewId)).data.parentId == request.auth.uid &&
         get(/databases/$(database)/documents/bookings/$(reviewId)).data.coachId == request.resource.data.coachId &&
         get(/databases/$(database)/documents/bookings/$(reviewId)).data.status == 'completed';

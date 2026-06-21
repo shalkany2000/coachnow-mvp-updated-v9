@@ -70,16 +70,21 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
     await setDoc(doc(db, COLLECTION, review.bookingId), newReview);
 
     // Recompute this coach's aggregate rating from all their reviews
-    // (including the one just added). The Firestore rules specifically
-    // allow any signed-in person to update *only* the rating/reviewCount
-    // fields on a coach doc, precisely so this can happen without needing
-    // a Cloud Function.
-    const coachReviews = [...reviews.filter((r) => r.coachId === review.coachId), newReview];
-    const avg = coachReviews.reduce((sum, r) => sum + r.rating, 0) / coachReviews.length;
-    await updateCoach(review.coachId, {
-      rating: Math.round(avg * 10) / 10,
-      reviewCount: coachReviews.length,
-    });
+    // (including the one just added). This is intentionally best-effort:
+    // the review itself is already saved at this point, so a hiccup here
+    // shouldn't make the submission look like it failed to the person who
+    // just wrote it — especially since retrying would be rejected anyway
+    // (one review per booking, enforced by the rule above).
+    try {
+      const coachReviews = [...reviews.filter((r) => r.coachId === review.coachId), newReview];
+      const avg = coachReviews.reduce((sum, r) => sum + r.rating, 0) / coachReviews.length;
+      await updateCoach(review.coachId, {
+        rating: Math.round(avg * 10) / 10,
+        reviewCount: coachReviews.length,
+      });
+    } catch (err) {
+      console.error("Review saved, but couldn't update the coach's aggregate rating:", err);
+    }
   };
 
   return (
