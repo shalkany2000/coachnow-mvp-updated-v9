@@ -44,6 +44,7 @@ export function CoachProfileSetup() {
     availabilityEnd: existingCoach?.availabilityEnd || '18:00',
     sessionDuration: existingCoach?.sessionDuration?.toString() || '60',
     languages: existingCoach?.languages || [],
+    onLeave: existingCoach?.onLeave || false,
   });
 
   useEffect(() => {
@@ -61,6 +62,7 @@ export function CoachProfileSetup() {
         availabilityEnd: existingCoach.availabilityEnd || '18:00',
         sessionDuration: (existingCoach.sessionDuration || 60).toString(),
         languages: existingCoach.languages,
+        onLeave: existingCoach.onLeave || false,
       });
     }
   }, [existingCoach?.id]);
@@ -110,6 +112,7 @@ export function CoachProfileSetup() {
         availabilityEnd: form.availabilityEnd,
         sessionDuration: parseInt(form.sessionDuration) || 60,
         languages: form.languages,
+        onLeave: form.onLeave,
         email: currentUser?.email || '',
       };
       if (existingCoach) {
@@ -297,6 +300,39 @@ export function CoachProfileSetup() {
               </p>
             </Card>
 
+            {/* On Leave */}
+            <Card className={form.onLeave ? 'border-2 border-amber-300 bg-amber-50' : ''}>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="font-bold text-gray-900">Taking a break?</h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Turn this on while you're away — your profile is hidden from new bookings until you turn it back off.
+                    Existing bookings aren't affected.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={form.onLeave}
+                  onClick={() => setForm(p => ({ ...p, onLeave: !p.onLeave }))}
+                  className={`relative flex-shrink-0 w-12 h-7 rounded-full transition-colors ${
+                    form.onLeave ? 'bg-amber-500' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                      form.onLeave ? 'translate-x-5' : ''
+                    }`}
+                  />
+                </button>
+              </div>
+              {form.onLeave && (
+                <p className="text-sm font-semibold text-amber-700 mt-3">
+                  🌴 You're currently set as on leave — clients can't book you right now.
+                </p>
+              )}
+            </Card>
+
             {/* Languages */}
             <Card>
               <h2 className="font-bold text-gray-900 mb-4">Languages Spoken</h2>
@@ -333,7 +369,12 @@ export function CoachProfileSetup() {
                   }}
                 />
                 <h4 className="font-bold text-gray-900">{form.name || 'Your Name'}</h4>
-                {form.sportType && <p className="text-sm text-blue-600 font-medium">{form.sportType}</p>}
+                {form.onLeave && (
+                  <span className="inline-block mt-1 text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                    🌴 On Leave
+                  </span>
+                )}
+                {form.sportType && <p className="text-sm text-blue-600 font-medium mt-1">{form.sportType}</p>}
                 {form.location && <p className="text-xs text-gray-500 mt-0.5">📍 {form.location}</p>}
               </div>
               <div className="space-y-2 text-sm">

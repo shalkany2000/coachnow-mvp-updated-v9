@@ -27,6 +27,7 @@ export interface Coach {
   availabilityEnd: string;
   sessionDuration: number; // minutes
   verified: boolean;
+  onLeave?: boolean;
 }
 
 export interface Review {

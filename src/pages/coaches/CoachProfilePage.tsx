@@ -103,6 +103,9 @@ export function CoachProfilePage() {
                         {coach.verified && (
                           <Badge variant="blue" size="md">✓ Verified</Badge>
                         )}
+                        {coach.onLeave && (
+                          <Badge variant="yellow" size="md">🌴 On Leave</Badge>
+                        )}
                       </div>
                     </div>
                     <button
@@ -241,13 +244,24 @@ export function CoachProfilePage() {
                   <span className="font-medium text-gray-800">{coach.location}</span>
                 </div>
               </div>
-              <Button fullWidth size="lg" onClick={handleBook}>
-                <Calendar className="w-5 h-5" />
-                Book a Session
-              </Button>
-              <p className="text-xs text-center text-gray-400 mt-3">
-                Free cancellation up to 24 hours before
-              </p>
+              {coach.onLeave ? (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
+                  <p className="font-semibold text-amber-800 text-sm">🌴 Currently on leave</p>
+                  <p className="text-xs text-amber-700 mt-1">
+                    {coach.name.split(' ')[0]} isn't accepting new bookings right now. Check back soon!
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <Button fullWidth size="lg" onClick={handleBook}>
+                    <Calendar className="w-5 h-5" />
+                    Book a Session
+                  </Button>
+                  <p className="text-xs text-center text-gray-400 mt-3">
+                    Free cancellation up to 24 hours before
+                  </p>
+                </>
+              )}
             </Card>
 
             {/* Quick Stats */}

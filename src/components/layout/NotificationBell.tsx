@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Bell, Calendar, DollarSign, UserPlus } from 'lucide-react';
+import { Bell, Calendar, DollarSign, UserPlus, Star } from 'lucide-react';
 import { useOutsideClick } from '../../hooks/useOutsideClick';
 import { AdminNotification } from '../../hooks/useAdminNotifications';
 import { formatRelativeTime } from '../../utils/time';
@@ -8,6 +8,7 @@ const notificationIcons = {
   booking: <Calendar className="w-4 h-4" />,
   payment: <DollarSign className="w-4 h-4" />,
   signup: <UserPlus className="w-4 h-4" />,
+  review: <Star className="w-4 h-4" />,
 };
 
 interface NotificationBellProps {
@@ -64,6 +65,7 @@ export function NotificationBell({ notifications, unreadCount, open, onToggle, o
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
                   n.kind === 'booking' ? 'bg-blue-50 text-blue-600' :
                   n.kind === 'payment' ? 'bg-emerald-50 text-emerald-600' :
+                  n.kind === 'review' ? 'bg-amber-50 text-amber-600' :
                   'bg-purple-50 text-purple-600'
                 }`}>
                   {notificationIcons[n.kind]}

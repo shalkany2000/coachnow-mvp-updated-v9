@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useBookings } from '../contexts/BookingContext';
+import { useReviews } from '../contexts/ReviewContext';
+import { useCoaches } from '../contexts/CoachContext';
 import { useFirestoreCollection } from './useFirestoreCollection';
 import { mockUsers, User } from '../lib/mockData';
 
@@ -11,7 +13,7 @@ export interface AdminNotification {
   message: string;
   timestamp: string; // ISO
   link: string;
-  kind: 'booking' | 'payment' | 'signup';
+  kind: 'booking' | 'payment' | 'signup' | 'review';
 }
 
 // Builds a real notification feed from data that already exists — new
@@ -29,6 +31,8 @@ export function useAdminNotifications() {
   const { currentUser } = useAuth();
   const isAdmin = currentUser?.role === 'admin';
   const { bookings } = useBookings();
+  const { reviews } = useReviews();
+  const { coaches } = useCoaches();
   const { data: registeredUsers } = useFirestoreCollection<User>('users', isAdmin);
   const [seenAt, setSeenAt] = useState<string>(() => {
     try {
@@ -75,10 +79,21 @@ export function useAdminNotifications() {
         });
       });
 
+    reviews.forEach(r => {
+      const coachName = coaches.find(c => c.id === r.coachId)?.name || 'a coach';
+      items.push({
+        id: `review-${r.id}`,
+        message: `${r.parentName} left a ${r.rating}★ review for ${coachName}`,
+        timestamp: r.createdAt,
+        link: `/coaches/${r.coachId}`,
+        kind: 'review',
+      });
+    });
+
     return items
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, 20);
-  }, [bookings, registeredUsers]);
+  }, [bookings, registeredUsers, reviews, coaches]);
 
   const unreadCount = notifications.filter(n => !seenAt || n.timestamp > seenAt).length;
 

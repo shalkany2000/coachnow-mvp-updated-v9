@@ -102,6 +102,7 @@ export function AdminCoaches() {
                           ? <Badge variant="green" size="sm">✓ Verified</Badge>
                           : <Badge variant="yellow" size="sm">Pending</Badge>
                         }
+                        {coach.onLeave && <Badge variant="yellow" size="sm">🌴 On Leave</Badge>}
                       </div>
                     </div>
                     <span className="font-bold text-blue-600 text-sm flex-shrink-0">AED {coach.pricePerHour}/session</span>

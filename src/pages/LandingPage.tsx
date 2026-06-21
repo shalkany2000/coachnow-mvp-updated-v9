@@ -4,6 +4,7 @@ import { Dumbbell, Search, Star, Shield, Clock, ChevronRight, MapPin, Users, Awa
 import { Button } from '../components/ui/Button';
 import { SPORT_TYPES } from '../lib/mockData';
 import { useCoaches } from '../contexts/CoachContext';
+import { buildAdminWhatsAppLink, ADMIN_WHATSAPP_NUMBER } from '../lib/config';
 import { CoachCard } from '../components/coaches/CoachCard';
 import { Navbar } from '../components/layout/Navbar';
 
@@ -47,7 +48,7 @@ export function LandingPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const { coaches } = useCoaches();
-  const featuredCoaches = [...coaches].filter(c => c.verified).sort((a, b) => b.rating - a.rating).slice(0, 3);
+  const featuredCoaches = [...coaches].filter(c => c.verified && !c.onLeave).sort((a, b) => b.rating - a.rating).slice(0, 3);
 
   const handleSearch = () => {
     const q = query.trim();
@@ -268,10 +269,18 @@ export function LandingPage() {
               </div>
               <span className="font-bold text-white text-lg">CoachNow</span>
             </div>
-            <div className="flex gap-8 text-sm">
+            <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm">
               <Link to="/coaches" className="hover:text-white transition-colors">Find Coaches</Link>
               <Link to="/register" className="hover:text-white transition-colors">Become a Coach</Link>
               <a href="mailto:hello@coachnow.ae" className="hover:text-white transition-colors">Contact</a>
+              <a
+                href={buildAdminWhatsAppLink('Hi, I have a suggestion/complaint about CoachNow:')}
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-white transition-colors"
+              >
+                Suggestions &amp; Complaints: +{ADMIN_WHATSAPP_NUMBER.slice(0, 3)} {ADMIN_WHATSAPP_NUMBER.slice(3, 5)} {ADMIN_WHATSAPP_NUMBER.slice(5, 8)} {ADMIN_WHATSAPP_NUMBER.slice(8)}
+              </a>
             </div>
             <p className="text-sm text-center">© 2025 CoachNow · Dubai, UAE 🇦🇪</p>
           </div>

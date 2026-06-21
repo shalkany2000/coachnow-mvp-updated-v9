@@ -40,6 +40,21 @@ export function BookingPage() {
     );
   }
 
+  if (coach.onLeave) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="flex items-center justify-center h-64 px-4">
+          <div className="text-center">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">🌴 {coach.name} is on leave</h2>
+            <p className="text-gray-500 mb-4">They aren't accepting new bookings right now — check back soon.</p>
+            <Button onClick={() => navigate('/coaches')}>Find Another Coach</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Get min date (today)
   const today = new Date().toISOString().split('T')[0];
 

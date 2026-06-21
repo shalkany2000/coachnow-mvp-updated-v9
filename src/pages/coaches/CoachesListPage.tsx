@@ -26,6 +26,7 @@ export function CoachesListPage() {
   }, [searchParams]);
 
   const filtered = coaches.filter(coach => {
+    if (coach.onLeave) return false;
     if (search && !coach.name.toLowerCase().includes(search.toLowerCase()) &&
       !coach.bio.toLowerCase().includes(search.toLowerCase()) &&
       !coach.sportType.toLowerCase().includes(search.toLowerCase())) return false;
