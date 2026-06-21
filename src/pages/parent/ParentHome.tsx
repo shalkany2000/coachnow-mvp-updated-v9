@@ -31,7 +31,7 @@ export function ParentHome() {
   const { getBookingsForParent } = useBookings();
   const { coaches } = useCoaches();
 
-  const bookings = currentUser ? getBookingsForParent(currentUser.id) : [];
+  const bookings = currentUser ? getBookingsForParent(currentUser.id, currentUser.email) : [];
   const upcomingBookings = bookings.filter(b => b.status === 'pending' || b.status === 'accepted').slice(0, 3);
   const topCoaches = coaches.filter(c => c.verified).sort((a, b) => b.rating - a.rating).slice(0, 3);
 

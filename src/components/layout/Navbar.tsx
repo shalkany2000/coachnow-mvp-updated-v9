@@ -30,8 +30,8 @@ export function Navbar() {
     setMenuOpen(false);
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
     setDropOpen(false);
   };

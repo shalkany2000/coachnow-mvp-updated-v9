@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, Dumbbell, Eye, EyeOff, Users, Phone } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth, friendlyAuthError } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 
@@ -27,8 +27,9 @@ export function RegisterPage() {
       await register(name, email, phone, password, role);
       if (role === 'coach') navigate('/coach/profile-setup');
       else navigate('/parent/home');
-    } catch {
-      setError('Registration failed. Please try again.');
+    } catch (err) {
+      console.error('Registration failed:', err);
+      setError(friendlyAuthError(err));
     } finally {
       setLoading(false);
     }

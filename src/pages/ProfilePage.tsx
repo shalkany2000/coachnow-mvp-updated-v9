@@ -109,7 +109,7 @@ export function ProfilePage() {
         <Button
           variant="danger"
           fullWidth
-          onClick={() => { logout(); navigate('/'); }}
+          onClick={async () => { await logout(); navigate('/'); }}
           className="flex items-center gap-2"
         >
           <LogOut className="w-4 h-4" />

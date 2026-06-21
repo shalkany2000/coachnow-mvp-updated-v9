@@ -21,7 +21,7 @@ export function ParentBookings() {
   const { getBookingsForParent } = useBookings();
   const [activeTab, setActiveTab] = useState('All');
 
-  const allBookings = currentUser ? getBookingsForParent(currentUser.id) : [];
+  const allBookings = currentUser ? getBookingsForParent(currentUser.id, currentUser.email) : [];
 
   const filtered = allBookings.filter(b => {
     if (activeTab === 'All') return true;

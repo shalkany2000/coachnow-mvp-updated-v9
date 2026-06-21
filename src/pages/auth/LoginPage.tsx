@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Dumbbell, Eye, EyeOff, ArrowRight } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth, friendlyAuthError } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 
@@ -26,16 +26,13 @@ export function LoginPage() {
     if (!email || !password) { setError('Please fill in all fields.'); return; }
     setLoading(true); setError('');
     try {
-      await login(email, password);
-      const stored = localStorage.getItem('coachnow_user');
-      if (stored) {
-        const user = JSON.parse(stored);
-        if (user.role === 'admin') navigate('/admin');
-        else if (user.role === 'coach') navigate('/coach/dashboard');
-        else navigate('/parent/home');
-      }
-    } catch {
-      setError('Invalid credentials. Try a demo account.');
+      const user = await login(email, password);
+      if (user.role === 'admin') navigate('/admin');
+      else if (user.role === 'coach') navigate('/coach/dashboard');
+      else navigate('/parent/home');
+    } catch (err) {
+      console.error('Login failed:', err);
+      setError(friendlyAuthError(err));
     } finally {
       setLoading(false);
     }
@@ -45,16 +42,16 @@ export function LoginPage() {
     setEmail(demoEmail); setPassword(demoPass);
     setLoading(true); setError('');
     try {
-      await login(demoEmail, demoPass);
-      const stored = localStorage.getItem('coachnow_user');
-      if (stored) {
-        const user = JSON.parse(stored);
-        if (user.role === 'admin') navigate('/admin');
-        else if (user.role === 'coach') navigate('/coach/dashboard');
-        else navigate('/parent/home');
-      }
-    } catch {
-      setError('Login failed.');
+      const user = await login(demoEmail, demoPass);
+      if (user.role === 'admin') navigate('/admin');
+      else if (user.role === 'coach') navigate('/coach/dashboard');
+      else navigate('/parent/home');
+    } catch (err) {
+      console.error('Demo login failed:', err);
+      setError(
+        "Demo login failed — this demo account may not be set up in Firebase yet. " +
+        friendlyAuthError(err)
+      );
     } finally {
       setLoading(false);
     }

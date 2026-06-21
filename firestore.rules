@@ -1,8 +1,58 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function myRole() {
+      return isSignedIn()
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+        : null;
+    }
+
+    function isAdmin() {
+      return myRole() == 'admin';
+    }
+
+    // NOTE ON READS: the app currently fetches each whole collection client-
+    // side and filters in JavaScript (rather than using Firestore `where()`
+    // queries scoped to the signed-in user). Firestore can't partially
+    // filter results out of an unconstrained collection listener via rules
+    // — a `list` request is either fully allowed or fully denied. So reads
+    // here are gated on "must be signed in" rather than "must be YOUR data"
+    // — that's a real, intentional limit: any logged-in user could read
+    // other users' bookings/contact info if they wrote custom code to do
+    // it, even though the app's own UI never lets them. A fully locked-down
+    // version would mean rewriting the data-fetching to use scoped queries
+    // (e.g. where('parentId','==',uid)) instead of "fetch everything".
+    // WRITES below are fully locked down regardless, since those target one
+    // specific document at a time and don't have this limitation.
+
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow delete: if false;
+    }
+
+    match /coaches/{coachId} {
+      // Public browsing — anyone can see the coach catalog without logging in.
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow delete: if false;
+    }
+
+    match /bookings/{bookingId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.parentId == request.auth.uid;
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        resource.data.parentId == request.auth.uid ||
+        get(/databases/$(database)/documents/coaches/$(resource.data.coachId)).data.userId == request.auth.uid
+      );
+      allow delete: if false;
     }
   }
 }

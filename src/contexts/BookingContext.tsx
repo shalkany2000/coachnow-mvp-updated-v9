@@ -10,7 +10,7 @@ interface BookingContextType {
   addBooking: (booking: Omit<Booking, 'id' | 'createdAt'>) => Promise<void>;
   updateBookingStatus: (id: string, status: Booking['status']) => Promise<void>;
   markBookingPaid: (id: string) => Promise<void>;
-  getBookingsForParent: (parentId: string) => Booking[];
+  getBookingsForParent: (parentId: string, parentEmail?: string) => Booking[];
   getBookingsForCoach: (coachId: string) => Booking[];
 }
 
@@ -85,8 +85,8 @@ export function BookingProvider({ children }: { children: ReactNode }) {
     await updateDoc(doc(db, COLLECTION, id), { paid: true, paidAt: new Date().toISOString() });
   };
 
-  const getBookingsForParent = (parentId: string) =>
-    bookings.filter((b) => b.parentId === parentId);
+  const getBookingsForParent = (parentId: string, parentEmail?: string) =>
+    bookings.filter((b) => b.parentId === parentId || (parentEmail && b.parentEmail === parentEmail));
 
   const getBookingsForCoach = (coachId: string) =>
     bookings.filter((b) => b.coachId === coachId);
