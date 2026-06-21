@@ -2,12 +2,19 @@ import { useEffect, useState } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
-export function useFirestoreCollection<T>(collectionName: string) {
+export function useFirestoreCollection<T>(collectionName: string, enabled: boolean = true) {
   const [data, setData] = useState<T[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!enabled) {
+      setData([]);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+    setLoading(true);
     const ref = collection(db, collectionName);
     const unsubscribe = onSnapshot(
       ref,
@@ -23,7 +30,7 @@ export function useFirestoreCollection<T>(collectionName: string) {
       }
     );
     return () => unsubscribe();
-  }, [collectionName]);
+  }, [collectionName, enabled]);
 
   return { data, loading, error };
 }

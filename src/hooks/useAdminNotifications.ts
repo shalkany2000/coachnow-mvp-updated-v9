@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { useBookings } from '../contexts/BookingContext';
 import { useFirestoreCollection } from './useFirestoreCollection';
 import { mockUsers, User } from '../lib/mockData';
@@ -17,9 +18,18 @@ export interface AdminNotification {
 // booking requests, confirmed payments, and new signups — rather than a
 // fake/decorative bell. There's no backend pushing events, so "unread"
 // just means "happened after the last time the admin opened this panel".
+//
+// This hook is called unconditionally in the Navbar (rendered on every
+// page, for every visitor — hooks can't be called conditionally), but the
+// bell itself only ever shows for admins. The `enabled` gate below stops
+// it from trying to subscribe to the `users` collection — which requires
+// being signed in to read — for logged-out visitors just browsing the
+// public site.
 export function useAdminNotifications() {
+  const { currentUser } = useAuth();
+  const isAdmin = currentUser?.role === 'admin';
   const { bookings } = useBookings();
-  const { data: registeredUsers } = useFirestoreCollection<User>('users');
+  const { data: registeredUsers } = useFirestoreCollection<User>('users', isAdmin);
   const [seenAt, setSeenAt] = useState<string>(() => {
     try {
       return localStorage.getItem(SEEN_KEY) || '';

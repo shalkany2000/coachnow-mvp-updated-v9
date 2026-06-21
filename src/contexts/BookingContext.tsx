@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useRef, ReactNode } fro
 import { collection, doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Booking, mockBookings } from '../lib/mockData';
+import { useAuth } from './AuthContext';
 
 interface BookingContextType {
   bookings: Booking[];
@@ -25,6 +26,7 @@ export function useBookings() {
 const COLLECTION = 'bookings';
 
 export function BookingProvider({ children }: { children: ReactNode }) {
+  const { currentUser } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +37,19 @@ export function BookingProvider({ children }: { children: ReactNode }) {
   const hasSeeded = useRef(false);
 
   useEffect(() => {
+    // Bookings require being signed in to read (see firestore.rules) — but
+    // public pages like the homepage render before anyone's logged in.
+    // Without this check, every visitor would hit a permission error just
+    // browsing the site, and the page would be stuck waiting on data that
+    // will never arrive until they log in.
+    if (!currentUser) {
+      setBookings([]);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
+    setLoading(true);
     const bookingsRef = collection(db, COLLECTION);
 
     const unsubscribe = onSnapshot(
@@ -65,7 +80,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [currentUser]);
 
   const addBooking = async (booking: Omit<Booking, 'id' | 'createdAt'>) => {
     const id = `booking_${Date.now()}`;
