@@ -3,29 +3,26 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { MapPin, Star, Clock, CheckCircle, Globe, Calendar, ArrowLeft, Share2 } from 'lucide-react';
 import { useCoaches } from '../../contexts/CoachContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useReviews } from '../../contexts/ReviewContext';
 import { Navbar } from '../../components/layout/Navbar';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Card } from '../../components/ui/Card';
-import { formatTime } from '../../utils/time';
+import { formatTime, formatRelativeTime } from '../../utils/time';
 
 const sportColors: Record<string, 'blue' | 'green' | 'yellow' | 'red' | 'gray' | 'purple'> = {
   Swimming: 'blue', Fitness: 'green', Tennis: 'purple', Padel: 'yellow', Badminton: 'red',
 };
-
-const mockReviews = [
-  { name: 'Sarah M.', rating: 5, date: '2 weeks ago', comment: 'Absolutely fantastic coach! My son improved tremendously in just 4 sessions. Highly recommend!' },
-  { name: 'Khalid A.', rating: 5, date: '1 month ago', comment: 'Professional, punctual and very knowledgeable. Will definitely book again.' },
-  { name: 'Emma T.', rating: 4, date: '1 month ago', comment: 'Great experience overall. Coach was patient and adapted the session for my beginner level.' },
-];
 
 export function CoachProfilePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { getCoach } = useCoaches();
   const { currentUser } = useAuth();
+  const { getReviewsForCoach } = useReviews();
   const coach = getCoach(id || '');
   const [copied, setCopied] = useState(false);
+  const reviews = coach ? getReviewsForCoach(coach.id) : [];
 
   if (!coach) {
     return (
@@ -188,27 +185,33 @@ export function CoachProfilePage() {
                 </div>
               </div>
               <div className="space-y-4">
-                {mockReviews.map((review, i) => (
-                  <div key={i} className="border-b border-gray-100 last:border-0 pb-4 last:pb-0">
-                    <div className="flex items-start justify-between gap-3 mb-2">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center">
-                          <span className="text-sm font-bold text-gray-600">{review.name.charAt(0)}</span>
+                {reviews.length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-6">
+                    No reviews yet — be the first to book and leave one!
+                  </p>
+                ) : (
+                  reviews.map((review) => (
+                    <div key={review.id} className="border-b border-gray-100 last:border-0 pb-4 last:pb-0">
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center">
+                            <span className="text-sm font-bold text-gray-600">{review.parentName.charAt(0)}</span>
+                          </div>
+                          <div>
+                            <p className="font-semibold text-sm text-gray-900">{review.parentName}</p>
+                            <p className="text-xs text-gray-400">{formatRelativeTime(review.createdAt)}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-semibold text-sm text-gray-900">{review.name}</p>
-                          <p className="text-xs text-gray-400">{review.date}</p>
+                        <div className="flex gap-0.5">
+                          {Array.from({ length: 5 }).map((_, j) => (
+                            <Star key={j} className={`w-3.5 h-3.5 ${j < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'}`} />
+                          ))}
                         </div>
                       </div>
-                      <div className="flex gap-0.5">
-                        {Array.from({ length: 5 }).map((_, j) => (
-                          <Star key={j} className={`w-3.5 h-3.5 ${j < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'}`} />
-                        ))}
-                      </div>
+                      {review.comment && <p className="text-sm text-gray-600 pl-12">{review.comment}</p>}
                     </div>
-                    <p className="text-sm text-gray-600 pl-12">{review.comment}</p>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </Card>
           </div>

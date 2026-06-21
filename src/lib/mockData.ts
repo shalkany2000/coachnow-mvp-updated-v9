@@ -29,6 +29,17 @@ export interface Coach {
   verified: boolean;
 }
 
+export interface Review {
+  id: string; // same as bookingId — one review per completed booking
+  coachId: string;
+  bookingId: string;
+  parentId: string;
+  parentName: string;
+  rating: number; // 1-5
+  comment: string;
+  createdAt: string;
+}
+
 export interface Booking {
   id: string;
   parentId: string;

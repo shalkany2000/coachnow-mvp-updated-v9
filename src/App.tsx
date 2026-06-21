@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import { BookingProvider } from './contexts/BookingContext';
 import { CoachProvider } from './contexts/CoachContext';
+import { ReviewProvider } from './contexts/ReviewContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AppDataGate } from './components/AppDataGate';
 
@@ -68,6 +69,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <CoachProvider>
+          <ReviewProvider>
           <BookingProvider>
             <ScrollToHash />
             <ScrollToTop />
@@ -158,6 +160,7 @@ function App() {
             </Routes>
             </AppDataGate>
           </BookingProvider>
+          </ReviewProvider>
         </CoachProvider>
       </AuthProvider>
     </BrowserRouter>

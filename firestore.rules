@@ -50,22 +50,61 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // The starter catalog/bookings are seeded once, the first time the
+    // database is empty, using fixed known ids (coach1..coach8,
+    // booking1..booking8) — see CoachContext/BookingContext. That seeding
+    // can be triggered by any visitor, logged in or not, just by loading
+    // the page before anyone else has. Rather than opening up create on
+    // these collections entirely, these checks allow ONLY those exact
+    // starter ids to be created freely; anything else still has to go
+    // through the real ownership checks below.
+    function isSeedCoachId(id) {
+      return id in ['coach1','coach2','coach3','coach4','coach5','coach6','coach7','coach8'];
+    }
+    function isSeedBookingId(id) {
+      return id in ['booking1','booking2','booking3','booking4','booking5','booking6','booking7','booking8'];
+    }
+
     match /coaches/{coachId} {
       // Public browsing — anyone can see the coach catalog without logging in.
       allow read: if true;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAdmin() || ownsCoach(resource.data);
+      allow create: if isSeedCoachId(coachId) ||
+        (isSignedIn() && request.resource.data.userId == request.auth.uid);
+      // Anyone signed in can update ONLY rating/reviewCount (needed so a
+      // parent leaving a review can update the coach's aggregate score) —
+      // everything else about a coach's profile still requires ownership.
+      allow update: if isAdmin() || ownsCoach(resource.data) ||
+        (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating', 'reviewCount']));
       allow delete: if false;
     }
 
     match /bookings/{bookingId} {
       allow read: if isSignedIn();
-      allow create: if isSignedIn() && request.resource.data.parentId == request.auth.uid;
+      allow create: if isSeedBookingId(bookingId) ||
+        (isSignedIn() && request.resource.data.parentId == request.auth.uid);
       allow update: if isSignedIn() && (
         isAdmin() ||
         resource.data.parentId == request.auth.uid ||
         ownsCoach(get(/databases/$(database)/documents/coaches/$(resource.data.coachId)).data)
       );
+      allow delete: if false;
+    }
+
+    match /reviews/{reviewId} {
+      // Public — reviews are shown on coach profile pages to any visitor.
+      allow read: if true;
+      // The review's document id must be the booking id (enforced by the
+      // app), and only the actual parent on a COMPLETED booking for that
+      // exact coach can create it. Since `allow update` is false, trying
+      // to write a second review at the same id is rejected automatically
+      // — one review per booking, no separate uniqueness check needed.
+      allow create: if isSignedIn() &&
+        request.resource.data.parentId == request.auth.uid &&
+        reviewId == request.resource.data.bookingId &&
+        get(/databases/$(database)/documents/bookings/$(reviewId)).data.parentId == request.auth.uid &&
+        get(/databases/$(database)/documents/bookings/$(reviewId)).data.coachId == request.resource.data.coachId &&
+        get(/databases/$(database)/documents/bookings/$(reviewId)).data.status == 'completed';
+      allow update: if false;
       allow delete: if false;
     }
   }

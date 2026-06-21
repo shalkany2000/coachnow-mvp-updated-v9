@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { Search, Home, BookOpen } from 'lucide-react';
+import { Search, Home, BookOpen, Star, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBookings } from '../../contexts/BookingContext';
+import { useReviews } from '../../contexts/ReviewContext';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { BookingCard } from '../../components/bookings/BookingCard';
+import { ReviewForm } from '../../components/ReviewForm';
 import { Button } from '../../components/ui/Button';
 
 const sidebarItems = [
@@ -19,7 +21,9 @@ export function ParentBookings() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { getBookingsForParent } = useBookings();
+  const { hasReviewedBooking } = useReviews();
   const [activeTab, setActiveTab] = useState('All');
+  const [reviewingId, setReviewingId] = useState<string | null>(null);
 
   const allBookings = currentUser ? getBookingsForParent(currentUser.id, currentUser.email) : [];
 
@@ -89,7 +93,27 @@ export function ParentBookings() {
         ) : (
           <div className="grid gap-4">
             {filtered.map(booking => (
-              <BookingCard key={booking.id} booking={booking} role="parent" />
+              <div key={booking.id}>
+                <BookingCard booking={booking} role="parent" />
+                {booking.status === 'completed' && (
+                  hasReviewedBooking(booking.id) ? (
+                    <div className="flex items-center gap-1.5 text-sm text-emerald-600 font-medium mt-2 px-1">
+                      <CheckCircle className="w-4 h-4" />
+                      You reviewed this session
+                    </div>
+                  ) : reviewingId === booking.id ? (
+                    <ReviewForm booking={booking} onDone={() => setReviewingId(null)} />
+                  ) : (
+                    <button
+                      onClick={() => setReviewingId(booking.id)}
+                      className="flex items-center gap-1.5 text-sm text-blue-600 font-semibold mt-2 px-1 hover:text-blue-700"
+                    >
+                      <Star className="w-4 h-4" />
+                      Leave a review
+                    </button>
+                  )
+                )}
+              </div>
             ))}
           </div>
         )}
