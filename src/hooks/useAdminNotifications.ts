@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useBookings } from '../contexts/BookingContext';
+import { useFirestoreCollection } from './useFirestoreCollection';
 import { mockUsers, User } from '../lib/mockData';
 
 const SEEN_KEY = 'coachnow_admin_notifications_seen_at';
@@ -12,20 +13,13 @@ export interface AdminNotification {
   kind: 'booking' | 'payment' | 'signup';
 }
 
-function loadRegisteredUsers(): User[] {
-  try {
-    return JSON.parse(localStorage.getItem('coachnow_users_directory') || '[]');
-  } catch {
-    return [];
-  }
-}
-
 // Builds a real notification feed from data that already exists — new
 // booking requests, confirmed payments, and new signups — rather than a
 // fake/decorative bell. There's no backend pushing events, so "unread"
 // just means "happened after the last time the admin opened this panel".
 export function useAdminNotifications() {
   const { bookings } = useBookings();
+  const { data: registeredUsers } = useFirestoreCollection<User>('users');
   const [seenAt, setSeenAt] = useState<string>(() => {
     try {
       return localStorage.getItem(SEEN_KEY) || '';
@@ -59,7 +53,7 @@ export function useAdminNotifications() {
     // Demo account logins also pass through saveToDirectory (see
     // AuthContext), so exclude the 3 seeded demo accounts to avoid
     // "new signup" noise every time someone clicks a demo login button.
-    loadRegisteredUsers()
+    registeredUsers
       .filter(u => !mockUsers.some(m => m.email.toLowerCase() === u.email.toLowerCase()))
       .forEach(u => {
         items.push({
@@ -74,7 +68,7 @@ export function useAdminNotifications() {
     return items
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, 20);
-  }, [bookings]);
+  }, [bookings, registeredUsers]);
 
   const unreadCount = notifications.filter(n => !seenAt || n.timestamp > seenAt).length;
 

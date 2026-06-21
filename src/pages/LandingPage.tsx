@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Dumbbell, Search, Star, Shield, Clock, ChevronRight, MapPin, Users, Award, Zap } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import { mockCoaches, SPORT_TYPES } from '../lib/mockData';
+import { SPORT_TYPES } from '../lib/mockData';
+import { useCoaches } from '../contexts/CoachContext';
 import { CoachCard } from '../components/coaches/CoachCard';
 import { Navbar } from '../components/layout/Navbar';
 
@@ -48,7 +49,8 @@ const howItWorks = [
 export function LandingPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
-  const featuredCoaches = mockCoaches.filter(c => c.verified).slice(0, 3);
+  const { coaches } = useCoaches();
+  const featuredCoaches = [...coaches].filter(c => c.verified).sort((a, b) => b.rating - a.rating).slice(0, 3);
 
   const handleSearch = () => {
     const q = query.trim();

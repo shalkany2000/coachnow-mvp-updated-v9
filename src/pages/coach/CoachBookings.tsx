@@ -24,12 +24,23 @@ export function CoachBookings() {
   const { bookings, updateBookingStatus } = useBookings();
   const { coaches } = useCoaches();
   const [activeTab, setActiveTab] = useState('All');
+  const [actionError, setActionError] = useState('');
 
   const coachProfile = coaches.find(c =>
     c.userId === currentUser?.id || c.email === currentUser?.email
   );
 
   const coachBookings = coachProfile ? bookings.filter(b => b.coachId === coachProfile.id) : [];
+
+  const handleStatusChange = async (id: string, status: 'accepted' | 'rejected' | 'completed') => {
+    setActionError('');
+    try {
+      await updateBookingStatus(id, status);
+    } catch (err) {
+      console.error('Failed to update booking:', err);
+      setActionError("Couldn't update that booking — check your connection and try again.");
+    }
+  };
 
   const filtered = coachBookings.filter(b => {
     if (activeTab === 'All') return true;
@@ -76,6 +87,12 @@ export function CoachBookings() {
           ))}
         </div>
 
+        {actionError && (
+          <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-sm text-red-600 font-medium">
+            {actionError}
+          </div>
+        )}
+
         {filtered.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
             <div className="text-5xl mb-4">📭</div>
@@ -92,9 +109,9 @@ export function CoachBookings() {
                 key={booking.id}
                 booking={booking}
                 role="coach"
-                onAccept={(id) => updateBookingStatus(id, 'accepted')}
-                onReject={(id) => updateBookingStatus(id, 'rejected')}
-                onComplete={(id) => updateBookingStatus(id, 'completed')}
+                onAccept={(id) => handleStatusChange(id, 'accepted')}
+                onReject={(id) => handleStatusChange(id, 'rejected')}
+                onComplete={(id) => handleStatusChange(id, 'completed')}
               />
             ))}
           </div>

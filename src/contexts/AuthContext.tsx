@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { User, mockUsers } from '../lib/mockData';
 
 interface AuthContextType {
@@ -31,14 +33,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, []);
 
-  // Keeps a directory of every account that has ever logged in or registered,
-  // so the Admin > Users page can show real signups instead of only the
-  // 3 hardcoded demo accounts.
+  // Keeps a directory of every account that has ever logged in or registered
+  // in Firestore (not localStorage), so the Admin > Users page sees real
+  // signups from every device, not just the admin's own browser. This is
+  // fire-and-forget on purpose — a hiccup writing to the directory shouldn't
+  // block someone from actually logging in and using the app.
   const saveToDirectory = (user: User) => {
-    const stored = localStorage.getItem('coachnow_users_directory');
-    const directory: User[] = stored ? JSON.parse(stored) : [];
-    const next = [...directory.filter(u => u.email.toLowerCase() !== user.email.toLowerCase()), user];
-    localStorage.setItem('coachnow_users_directory', JSON.stringify(next));
+    setDoc(doc(db, 'users', user.id), user).catch((err) => {
+      console.error('Failed to record user in directory:', err);
+    });
   };
 
   const login = async (email: string, _password: string) => {

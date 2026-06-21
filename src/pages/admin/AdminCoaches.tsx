@@ -23,6 +23,17 @@ export function AdminCoaches() {
   const navigate = useNavigate();
   const { coaches, updateCoach } = useCoaches();
   const [search, setSearch] = useState('');
+  const [actionError, setActionError] = useState('');
+
+  const toggleVerified = async (id: string, verified: boolean) => {
+    setActionError('');
+    try {
+      await updateCoach(id, { verified });
+    } catch (err) {
+      console.error('Failed to update coach verification:', err);
+      setActionError("Couldn't update that coach — check your connection and try again.");
+    }
+  };
 
   const filtered = coaches.filter(c =>
     !search ||
@@ -66,6 +77,12 @@ export function AdminCoaches() {
           />
         </div>
 
+        {actionError && (
+          <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-sm text-red-600 font-medium">
+            {actionError}
+          </div>
+        )}
+
         {/* Coach Cards Grid */}
         <div className="grid md:grid-cols-2 gap-4">
           {filtered.map(coach => (
@@ -101,7 +118,7 @@ export function AdminCoaches() {
               <div className="flex gap-2 mt-4 pt-3 border-t border-gray-100">
                 {!coach.verified ? (
                   <button
-                    onClick={() => updateCoach(coach.id, { verified: true })}
+                    onClick={() => toggleVerified(coach.id, true)}
                     className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-green-700 bg-green-50 hover:bg-green-100 py-2 rounded-lg transition-colors"
                   >
                     <CheckCircle className="w-3.5 h-3.5" />
@@ -109,7 +126,7 @@ export function AdminCoaches() {
                   </button>
                 ) : (
                   <button
-                    onClick={() => updateCoach(coach.id, { verified: false })}
+                    onClick={() => toggleVerified(coach.id, false)}
                     className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 py-2 rounded-lg transition-colors"
                   >
                     <XCircle className="w-3.5 h-3.5" />

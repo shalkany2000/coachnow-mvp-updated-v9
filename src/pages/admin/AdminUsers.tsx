@@ -1,9 +1,10 @@
 import { LayoutDashboard, Users, User, BookOpen, Search, Mail, Phone, Calendar } from 'lucide-react';
 import { useCoaches } from '../../contexts/CoachContext';
+import { useFirestoreCollection } from '../../hooks/useFirestoreCollection';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
-import { mockUsers } from '../../lib/mockData';
+import { mockUsers, User as UserType } from '../../lib/mockData';
 import { useState } from 'react';
 
 const sidebarItems = [
@@ -23,14 +24,10 @@ export function AdminUsers() {
   const { coaches } = useCoaches();
   const [search, setSearch] = useState('');
 
-  // Real accounts that have logged in or registered (see AuthContext.saveToDirectory)
-  const registeredUsers: typeof mockUsers = (() => {
-    try {
-      return JSON.parse(localStorage.getItem('coachnow_users_directory') || '[]');
-    } catch {
-      return [];
-    }
-  })();
+  // Real accounts that have logged in or registered, live from Firestore —
+  // see AuthContext.saveToDirectory — so this reflects signups from every
+  // device, not just whichever browser the admin happens to be using.
+  const { data: registeredUsers } = useFirestoreCollection<UserType>('users');
 
   // Combine mock users + real registered users + coach users derived from the coach catalog
   const coachUsers = coaches.map(c => ({

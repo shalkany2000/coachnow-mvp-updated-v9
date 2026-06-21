@@ -18,6 +18,17 @@ export function AdminBookings() {
   const { bookings, markBookingPaid } = useBookings();
   const [activeTab, setActiveTab] = useState('All');
   const [search, setSearch] = useState('');
+  const [actionError, setActionError] = useState('');
+
+  const handleMarkPaid = async (id: string) => {
+    setActionError('');
+    try {
+      await markBookingPaid(id);
+    } catch (err) {
+      console.error('Failed to mark booking as paid:', err);
+      setActionError("Couldn't update that booking — check your connection and try again.");
+    }
+  };
 
   const filtered = bookings.filter(b => {
     const matchTab = activeTab === 'All' || b.status === activeTab.toLowerCase();
@@ -90,6 +101,12 @@ export function AdminBookings() {
           ))}
         </div>
 
+        {actionError && (
+          <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-sm text-red-600 font-medium">
+            {actionError}
+          </div>
+        )}
+
         {/* Bookings */}
         {filtered.length === 0 ? (
           <div className="text-center py-12">
@@ -103,7 +120,7 @@ export function AdminBookings() {
                 key={booking.id}
                 booking={booking}
                 role="admin"
-                onMarkPaid={(id) => markBookingPaid(id)}
+                onMarkPaid={handleMarkPaid}
               />
             ))}
           </div>

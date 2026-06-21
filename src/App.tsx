@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { BookingProvider } from './contexts/BookingContext';
 import { CoachProvider } from './contexts/CoachContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { AppDataGate } from './components/AppDataGate';
 
 // Public Pages
 import { LandingPage } from './pages/LandingPage';
@@ -70,6 +71,7 @@ function App() {
           <BookingProvider>
             <ScrollToHash />
             <ScrollToTop />
+            <AppDataGate>
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<LandingPage />} />
@@ -154,6 +156,7 @@ function App() {
               {/* Fallback */}
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
+            </AppDataGate>
           </BookingProvider>
         </CoachProvider>
       </AuthProvider>

@@ -97,7 +97,6 @@ export function CoachProfileSetup() {
     }
     setLoading(true);
     try {
-      await new Promise(r => setTimeout(r, 600));
       const profileData = {
         name: form.name,
         bio: form.bio,
@@ -114,9 +113,9 @@ export function CoachProfileSetup() {
         email: currentUser?.email || '',
       };
       if (existingCoach) {
-        updateCoach(existingCoach.id, profileData);
+        await updateCoach(existingCoach.id, profileData);
       } else {
-        addCoach({
+        await addCoach({
           ...profileData,
           id: `coach_${Date.now()}`,
           userId: currentUser?.id || '',
@@ -127,8 +126,9 @@ export function CoachProfileSetup() {
       }
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-    } catch {
-      setError('Something went wrong saving your profile. Please try again.');
+    } catch (err) {
+      console.error('Failed to save coach profile:', err);
+      setError('Something went wrong saving your profile — check your connection and try again.');
     } finally {
       setLoading(false);
     }

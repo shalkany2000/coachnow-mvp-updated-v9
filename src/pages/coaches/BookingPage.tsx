@@ -60,8 +60,7 @@ export function BookingPage() {
     if (!time) { setError('Please select a time slot.'); return; }
     setLoading(true); setError('');
     try {
-      await new Promise(r => setTimeout(r, 800)); // Simulate API
-      addBooking({
+      await addBooking({
         parentId: currentUser.id,
         parentName: currentUser.name,
         parentEmail: currentUser.email,
@@ -81,8 +80,9 @@ export function BookingPage() {
         notes,
       });
       setSuccess(true);
-    } catch {
-      setError('Booking failed. Please try again.');
+    } catch (err) {
+      console.error('Booking failed:', err);
+      setError('Booking failed — please check your connection and try again.');
     } finally {
       setLoading(false);
     }

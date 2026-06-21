@@ -1,11 +1,15 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
+import { collection, doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { Booking, mockBookings } from '../lib/mockData';
 
 interface BookingContextType {
   bookings: Booking[];
-  addBooking: (booking: Omit<Booking, 'id' | 'createdAt'>) => void;
-  updateBookingStatus: (id: string, status: Booking['status']) => void;
-  markBookingPaid: (id: string) => void;
+  loading: boolean;
+  error: string | null;
+  addBooking: (booking: Omit<Booking, 'id' | 'createdAt'>) => Promise<void>;
+  updateBookingStatus: (id: string, status: Booking['status']) => Promise<void>;
+  markBookingPaid: (id: string) => Promise<void>;
   getBookingsForParent: (parentId: string) => Booking[];
   getBookingsForCoach: (coachId: string) => Booking[];
 }
@@ -18,63 +22,88 @@ export function useBookings() {
   return ctx;
 }
 
-// Lazy initial state reads localStorage synchronously on first render,
-// instead of starting from [] and populating via useEffect after mount —
-// the old approach caused every dashboard to briefly flash an empty/zero
-// state on every page load before the real bookings appeared.
-function loadInitialBookings(): Booking[] {
-  try {
-    const stored = localStorage.getItem('coachnow_bookings');
-    if (stored) return JSON.parse(stored);
-  } catch {
-    // fall through to defaults
-  }
-  localStorage.setItem('coachnow_bookings', JSON.stringify(mockBookings));
-  return mockBookings;
-}
+const COLLECTION = 'bookings';
 
 export function BookingProvider({ children }: { children: ReactNode }) {
-  const [bookings, setBookings] = useState<Booking[]>(loadInitialBookings);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  // Booking ids in the seed data (booking1, booking2, ...) are fixed, so
+  // concurrent seeding from two devices on first-ever load overwrites the
+  // same documents instead of creating duplicates — see CoachContext for
+  // the same pattern with more detail.
+  const hasSeeded = useRef(false);
 
-  const saveBookings = (updated: Booking[]) => {
-    setBookings(updated);
-    localStorage.setItem('coachnow_bookings', JSON.stringify(updated));
-  };
+  useEffect(() => {
+    const bookingsRef = collection(db, COLLECTION);
 
-  const addBooking = (booking: Omit<Booking, 'id' | 'createdAt'>) => {
+    const unsubscribe = onSnapshot(
+      bookingsRef,
+      async (snapshot) => {
+        if (snapshot.empty && !hasSeeded.current) {
+          hasSeeded.current = true;
+          try {
+            await Promise.all(
+              mockBookings.map((booking) => setDoc(doc(db, COLLECTION, booking.id), booking))
+            );
+          } catch (err) {
+            console.error('Failed to seed starter bookings:', err);
+            setError('Could not load bookings. Check your connection and reload.');
+            setLoading(false);
+          }
+          return;
+        }
+        setBookings(snapshot.docs.map((d) => d.data() as Booking));
+        setLoading(false);
+        setError(null);
+      },
+      (err) => {
+        console.error('Bookings subscription error:', err);
+        setError('Could not load bookings. Check your connection and reload.');
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  const addBooking = async (booking: Omit<Booking, 'id' | 'createdAt'>) => {
+    const id = `booking_${Date.now()}`;
     const newBooking: Booking = {
       ...booking,
-      id: `booking_${Date.now()}`,
+      id,
       createdAt: new Date().toISOString(),
     };
-    saveBookings([...bookings, newBooking]);
+    await setDoc(doc(db, COLLECTION, id), newBooking);
   };
 
-  const updateBookingStatus = (id: string, status: Booking['status']) => {
-    const updated = bookings.map(b => b.id === id ? { ...b, status } : b);
-    saveBookings(updated);
+  const updateBookingStatus = async (id: string, status: Booking['status']) => {
+    await updateDoc(doc(db, COLLECTION, id), { status });
   };
 
-  const markBookingPaid = (id: string) => {
-    const updated = bookings.map(b => b.id === id ? { ...b, paid: true, paidAt: new Date().toISOString() } : b);
-    saveBookings(updated);
+  const markBookingPaid = async (id: string) => {
+    await updateDoc(doc(db, COLLECTION, id), { paid: true, paidAt: new Date().toISOString() });
   };
 
   const getBookingsForParent = (parentId: string) =>
-    bookings.filter(b => b.parentId === parentId);
+    bookings.filter((b) => b.parentId === parentId);
 
   const getBookingsForCoach = (coachId: string) =>
-    bookings.filter(b => b.coachId === coachId);
+    bookings.filter((b) => b.coachId === coachId);
 
   return (
-    <BookingContext.Provider value={{
-      bookings,
-      addBooking,
-      updateBookingStatus,
-      markBookingPaid,
-      getBookingsForParent,
-      getBookingsForCoach,
-    }}>
+    <BookingContext.Provider
+      value={{
+        bookings,
+        loading,
+        error,
+        addBooking,
+        updateBookingStatus,
+        markBookingPaid,
+        getBookingsForParent,
+        getBookingsForCoach,
+      }}
+    >
       {children}
     </BookingContext.Provider>
   );
