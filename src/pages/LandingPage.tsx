@@ -10,12 +10,9 @@ import { Navbar } from '../components/layout/Navbar';
 const SPORT_ICONS: Record<string, string> = {
   Swimming: '🏊',
   Fitness: '💪',
-  'Kids Training': '🧒',
   Tennis: '🎾',
-  Football: '⚽',
-  Basketball: '🏀',
-  Yoga: '🧘',
-  'Martial Arts': '🥋',
+  Padel: '🏓',
+  Badminton: '🏸',
 };
 
 const stats = [

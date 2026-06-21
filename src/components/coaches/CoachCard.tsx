@@ -8,12 +8,9 @@ import { Button } from '../ui/Button';
 const sportColors: Record<string, 'blue' | 'green' | 'yellow' | 'red' | 'gray' | 'purple'> = {
   Swimming: 'blue',
   Fitness: 'green',
-  'Kids Training': 'yellow',
   Tennis: 'purple',
-  Football: 'green',
-  Basketball: 'yellow',
-  Yoga: 'purple',
-  'Martial Arts': 'red',
+  Padel: 'yellow',
+  Badminton: 'red',
 };
 
 export function CoachCard({ coach }: { coach: Coach }) {

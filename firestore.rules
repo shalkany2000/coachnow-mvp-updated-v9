@@ -16,6 +16,20 @@ service cloud.firestore {
       return myRole() == 'admin';
     }
 
+    // The app matches "is this signed-in person the owner of this coach
+    // profile" by userId OR by email (see CoachContext / CoachDashboard
+    // etc.) — necessary because coach profiles seeded before this account
+    // existed have a placeholder userId that doesn't match the real
+    // Firebase Auth uid assigned on first login. Rules need the same dual
+    // check, or a legitimate coach gets blocked from updating their own
+    // bookings/profile.
+    function ownsCoach(coachData) {
+      return isSignedIn() && (
+        coachData.userId == request.auth.uid ||
+        coachData.email.lower() == request.auth.token.email.lower()
+      );
+    }
+
     // NOTE ON READS: the app currently fetches each whole collection client-
     // side and filters in JavaScript (rather than using Firestore `where()`
     // queries scoped to the signed-in user). Firestore can't partially
@@ -40,7 +54,7 @@ service cloud.firestore {
       // Public browsing — anyone can see the coach catalog without logging in.
       allow read: if true;
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow update: if isAdmin() || ownsCoach(resource.data);
       allow delete: if false;
     }
 
@@ -50,7 +64,7 @@ service cloud.firestore {
       allow update: if isSignedIn() && (
         isAdmin() ||
         resource.data.parentId == request.auth.uid ||
-        get(/databases/$(database)/documents/coaches/$(resource.data.coachId)).data.userId == request.auth.uid
+        ownsCoach(get(/databases/$(database)/documents/coaches/$(resource.data.coachId)).data)
       );
       allow delete: if false;
     }

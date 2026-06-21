@@ -10,9 +10,7 @@ import { Card } from '../../components/ui/Card';
 import { formatTime } from '../../utils/time';
 
 const sportColors: Record<string, 'blue' | 'green' | 'yellow' | 'red' | 'gray' | 'purple'> = {
-  Swimming: 'blue', Fitness: 'green', 'Kids Training': 'yellow',
-  Tennis: 'purple', Football: 'green', Basketball: 'yellow',
-  Yoga: 'purple', 'Martial Arts': 'red',
+  Swimming: 'blue', Fitness: 'green', Tennis: 'purple', Padel: 'yellow', Badminton: 'red',
 };
 
 const mockReviews = [
