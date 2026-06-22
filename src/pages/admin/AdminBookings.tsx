@@ -1,20 +1,15 @@
 import { useState } from 'react';
-import { LayoutDashboard, Users, User, BookOpen, Search, DollarSign } from 'lucide-react';
+import { BookOpen, Search, DollarSign } from 'lucide-react';
 import { useBookings } from '../../contexts/BookingContext';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Card } from '../../components/ui/Card';
 import { BookingCard } from '../../components/bookings/BookingCard';
-
-const sidebarItems = [
-  { label: 'Overview', path: '/admin', icon: <LayoutDashboard className="w-full h-full" /> },
-  { label: 'Users', path: '/admin/users', icon: <Users className="w-full h-full" /> },
-  { label: 'Coaches', path: '/admin/coaches', icon: <User className="w-full h-full" /> },
-  { label: 'Bookings', path: '/admin/bookings', icon: <BookOpen className="w-full h-full" /> },
-];
+import { useAdminSidebarItems } from '../../hooks/useAdminSidebarItems';
 
 const TABS = ['All', 'Pending', 'Accepted', 'Completed', 'Rejected'];
 
 export function AdminBookings() {
+  const { items: sidebarItems, title: sidebarTitle } = useAdminSidebarItems();
   const { bookings, markBookingPaid } = useBookings();
   const [activeTab, setActiveTab] = useState('All');
   const [search, setSearch] = useState('');
@@ -42,7 +37,7 @@ export function AdminBookings() {
   const totalCommission = bookings.filter(b => b.status === 'completed').reduce((s, b) => s + b.commission, 0);
 
   return (
-    <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Admin Panel">
+    <DashboardLayout sidebarItems={sidebarItems} sidebarTitle={sidebarTitle}>
       <div className="space-y-6">
         <div className="flex items-start justify-between gap-4">
           <div>
