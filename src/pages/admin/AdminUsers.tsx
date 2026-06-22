@@ -1,6 +1,4 @@
-import { Users, Search, Mail, Phone, Calendar, ShieldCheck, ShieldOff } from 'lucide-react';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { LayoutDashboard, Users, User, BookOpen, Search, Mail, Phone, Calendar } from 'lucide-react';
 import { useCoaches } from '../../contexts/CoachContext';
 import { useFirestoreCollection } from '../../hooks/useFirestoreCollection';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
@@ -8,43 +6,28 @@ import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { mockUsers, User as UserType } from '../../lib/mockData';
 import { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useAdminSidebarItems } from '../../hooks/useAdminSidebarItems';
+
+const sidebarItems = [
+  { label: 'Overview', path: '/admin', icon: <LayoutDashboard className="w-full h-full" /> },
+  { label: 'Users', path: '/admin/users', icon: <Users className="w-full h-full" /> },
+  { label: 'Coaches', path: '/admin/coaches', icon: <User className="w-full h-full" /> },
+  { label: 'Bookings', path: '/admin/bookings', icon: <BookOpen className="w-full h-full" /> },
+];
 
 const roleConfig = {
   parent: { label: 'Parent', variant: 'blue' as const },
   coach: { label: 'Coach', variant: 'green' as const },
   admin: { label: 'Admin', variant: 'purple' as const },
-  gm: { label: 'GM', variant: 'yellow' as const },
 };
 
 export function AdminUsers() {
-  const { items: sidebarItems, title: sidebarTitle } = useAdminSidebarItems();
-  const { currentUser } = useAuth();
-  const isTrueAdmin = currentUser?.role === 'admin';
   const { coaches } = useCoaches();
   const [search, setSearch] = useState('');
-  const [actionError, setActionError] = useState('');
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   // Real accounts that have logged in or registered, live from Firestore —
   // see AuthContext.saveToDirectory — so this reflects signups from every
   // device, not just whichever browser the admin happens to be using.
   const { data: registeredUsers } = useFirestoreCollection<UserType>('users');
-  const registeredIds = new Set(registeredUsers.map(u => u.id));
-
-  const toggleGm = async (user: UserType) => {
-    setActionError('');
-    setUpdatingId(user.id);
-    try {
-      await updateDoc(doc(db, 'users', user.id), { role: user.role === 'gm' ? 'parent' : 'gm' });
-    } catch (err) {
-      console.error('Failed to update role:', err);
-      setActionError("Couldn't update that user's role — check your connection and try again.");
-    } finally {
-      setUpdatingId(null);
-    }
-  };
 
   // Combine mock users + real registered users + coach users derived from the coach catalog
   const coachUsers = coaches.map(c => ({
@@ -72,7 +55,7 @@ export function AdminUsers() {
   const coachCount = allUsers.filter(u => u.role === 'coach').length;
 
   return (
-    <DashboardLayout sidebarItems={sidebarItems} sidebarTitle={sidebarTitle}>
+    <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Admin Panel">
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-black text-gray-900">Users</h1>
@@ -103,12 +86,6 @@ export function AdminUsers() {
             onChange={e => setSearch(e.target.value)}
           />
         </div>
-
-        {actionError && (
-          <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-sm text-red-600 font-medium">
-            {actionError}
-          </div>
-        )}
 
         {/* Users — card list on mobile, table on desktop */}
         {filtered.length === 0 ? (
@@ -147,18 +124,6 @@ export function AdminUsers() {
                         <span>Joined {new Date(user.createdAt).toLocaleDateString('en-AE', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                       </div>
                     </div>
-                    {isTrueAdmin && registeredIds.has(user.id) && user.role !== 'admin' && (
-                      <button
-                        onClick={() => toggleGm(user)}
-                        disabled={updatingId === user.id}
-                        className={`w-full flex items-center justify-center gap-1.5 text-xs font-semibold py-2 rounded-lg mt-3 transition-colors disabled:opacity-50 ${
-                          user.role === 'gm' ? 'bg-gray-50 text-gray-600' : 'bg-amber-50 text-amber-700'
-                        }`}
-                      >
-                        {user.role === 'gm' ? <ShieldOff className="w-3.5 h-3.5" /> : <ShieldCheck className="w-3.5 h-3.5" />}
-                        {user.role === 'gm' ? 'Remove GM Access' : 'Promote to GM'}
-                      </button>
-                    )}
                   </Card>
                 );
               })}
@@ -175,7 +140,6 @@ export function AdminUsers() {
                       <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400">Phone</th>
                       <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400">Role</th>
                       <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400">Joined</th>
-                      {isTrueAdmin && <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400">Actions</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
@@ -212,22 +176,6 @@ export function AdminUsers() {
                               {new Date(user.createdAt).toLocaleDateString('en-AE', { day: 'numeric', month: 'short', year: 'numeric' })}
                             </div>
                           </td>
-                          {isTrueAdmin && (
-                            <td className="px-6 py-4">
-                              {registeredIds.has(user.id) && user.role !== 'admin' && (
-                                <button
-                                  onClick={() => toggleGm(user)}
-                                  disabled={updatingId === user.id}
-                                  className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 ${
-                                    user.role === 'gm' ? 'bg-gray-50 text-gray-600 hover:bg-gray-100' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
-                                  }`}
-                                >
-                                  {user.role === 'gm' ? <ShieldOff className="w-3.5 h-3.5" /> : <ShieldCheck className="w-3.5 h-3.5" />}
-                                  {user.role === 'gm' ? 'Remove GM' : 'Make GM'}
-                                </button>
-                              )}
-                            </td>
-                          )}
                         </tr>
                       );
                     })}

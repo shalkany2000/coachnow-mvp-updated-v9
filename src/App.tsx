@@ -4,7 +4,6 @@ import { AuthProvider } from './contexts/AuthContext';
 import { BookingProvider } from './contexts/BookingContext';
 import { CoachProvider } from './contexts/CoachContext';
 import { ReviewProvider } from './contexts/ReviewContext';
-import { SettingsProvider } from './contexts/SettingsContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AppDataGate } from './components/AppDataGate';
 
@@ -34,7 +33,6 @@ import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminUsers } from './pages/admin/AdminUsers';
 import { AdminCoaches } from './pages/admin/AdminCoaches';
 import { AdminBookings } from './pages/admin/AdminBookings';
-import { AdminSettings } from './pages/admin/AdminSettings';
 
 // Profile
 import { ProfilePage } from './pages/ProfilePage';
@@ -70,7 +68,6 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <SettingsProvider>
         <CoachProvider>
           <ReviewProvider>
           <BookingProvider>
@@ -131,28 +128,23 @@ function App() {
 
               {/* Admin Dashboard */}
               <Route path="/admin" element={
-                <ProtectedRoute role={['admin', 'gm']}>
+                <ProtectedRoute role="admin">
                   <AdminDashboard />
                 </ProtectedRoute>
               } />
               <Route path="/admin/users" element={
-                <ProtectedRoute role={['admin', 'gm']}>
+                <ProtectedRoute role="admin">
                   <AdminUsers />
                 </ProtectedRoute>
               } />
               <Route path="/admin/coaches" element={
-                <ProtectedRoute role={['admin', 'gm']}>
+                <ProtectedRoute role="admin">
                   <AdminCoaches />
                 </ProtectedRoute>
               } />
               <Route path="/admin/bookings" element={
-                <ProtectedRoute role={['admin', 'gm']}>
-                  <AdminBookings />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/settings" element={
                 <ProtectedRoute role="admin">
-                  <AdminSettings />
+                  <AdminBookings />
                 </ProtectedRoute>
               } />
 
@@ -170,7 +162,6 @@ function App() {
           </BookingProvider>
           </ReviewProvider>
         </CoachProvider>
-        </SettingsProvider>
       </AuthProvider>
     </BrowserRouter>
   );

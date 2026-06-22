@@ -2,7 +2,6 @@ import { LayoutDashboard, User, BookOpen, Calendar, DollarSign, TrendingUp, Chec
 import { useAuth } from '../../contexts/AuthContext';
 import { useBookings } from '../../contexts/BookingContext';
 import { useCoaches } from '../../contexts/CoachContext';
-import { useSettings } from '../../contexts/SettingsContext';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Card } from '../../components/ui/Card';
 
@@ -18,8 +17,6 @@ export function CoachEarnings() {
   const { currentUser } = useAuth();
   const { bookings } = useBookings();
   const { coaches } = useCoaches();
-  const { settings } = useSettings();
-  const commissionPercent = Math.round(settings.commissionRate * 100);
 
   const coachProfile = coaches.find(c =>
     c.userId === currentUser?.id || c.email === currentUser?.email
@@ -91,14 +88,14 @@ export function CoachEarnings() {
             </div>
             <div className="flex items-center justify-between p-4 bg-red-50 rounded-xl">
               <div className="min-w-0">
-                <p className="font-semibold text-red-800">Platform Commission ({commissionPercent}%)</p>
+                <p className="font-semibold text-red-800">Platform Commission (15%)</p>
                 <p className="text-sm text-red-600">CoachNow service fee</p>
               </div>
               <p className="text-xl font-black text-red-700 flex-shrink-0 whitespace-nowrap ml-3">- AED {totalCommission}</p>
             </div>
             <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-xl border-2 border-emerald-200">
               <div className="min-w-0">
-                <p className="font-bold text-emerald-800 text-lg">Your Net Earnings ({100 - commissionPercent}%)</p>
+                <p className="font-bold text-emerald-800 text-lg">Your Net Earnings (85%)</p>
                 <p className="text-sm text-emerald-600">Amount you take home</p>
               </div>
               <p className="text-2xl font-black text-emerald-700 flex-shrink-0 whitespace-nowrap ml-3">AED {totalEarned}</p>
@@ -115,8 +112,8 @@ export function CoachEarnings() {
             <div>
               <h3 className="font-bold text-gray-900 mb-1">How earnings work</h3>
               <div className="text-sm text-gray-600 space-y-1">
-                <p>• CoachNow takes a <strong>{commissionPercent}% platform fee</strong> on each completed session</p>
-                <p>• You keep <strong>{100 - commissionPercent}% of your session price</strong></p>
+                <p>• CoachNow takes a <strong>15% platform fee</strong> on each completed session</p>
+                <p>• You keep <strong>85% of your session price</strong></p>
                 <p>• Payment is collected online — clients pay via a secure link sent over WhatsApp</p>
                 <p>• Platform fee is deducted from your monthly settlement</p>
                 <p>• Payouts are processed weekly via bank transfer</p>

@@ -14,7 +14,7 @@ export function Navbar() {
   const [dropOpen, setDropOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
-  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'gm';
+  const isAdmin = currentUser?.role === 'admin';
   const { notifications, unreadCount, markAllSeen } = useAdminNotifications();
 
   useOutsideClick(dropRef, () => setDropOpen(false), dropOpen);
@@ -38,7 +38,7 @@ export function Navbar() {
 
   const getDashboardPath = () => {
     if (!currentUser) return '/';
-    if (currentUser.role === 'admin' || currentUser.role === 'gm') return '/admin';
+    if (currentUser.role === 'admin') return '/admin';
     if (currentUser.role === 'coach') return '/coach/dashboard';
     return '/parent/home';
   };

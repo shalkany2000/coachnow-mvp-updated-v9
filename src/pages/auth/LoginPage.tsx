@@ -27,7 +27,7 @@ export function LoginPage() {
     setLoading(true); setError('');
     try {
       const user = await login(email, password);
-      if (user.role === 'admin' || user.role === 'gm') navigate('/admin');
+      if (user.role === 'admin') navigate('/admin');
       else if (user.role === 'coach') navigate('/coach/dashboard');
       else navigate('/parent/home');
     } catch (err) {
@@ -43,7 +43,7 @@ export function LoginPage() {
     setLoading(true); setError('');
     try {
       const user = await login(demoEmail, demoPass);
-      if (user.role === 'admin' || user.role === 'gm') navigate('/admin');
+      if (user.role === 'admin') navigate('/admin');
       else if (user.role === 'coach') navigate('/coach/dashboard');
       else navigate('/parent/home');
     } catch (err) {

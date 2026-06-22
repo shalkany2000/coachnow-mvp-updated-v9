@@ -1,11 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Star, MapPin, CheckCircle, XCircle } from 'lucide-react';
+import { LayoutDashboard, Users, User, BookOpen, Search, Star, MapPin, CheckCircle, XCircle } from 'lucide-react';
 import { useCoaches } from '../../contexts/CoachContext';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
-import { useAdminSidebarItems } from '../../hooks/useAdminSidebarItems';
+
+const sidebarItems = [
+  { label: 'Overview', path: '/admin', icon: <LayoutDashboard className="w-full h-full" /> },
+  { label: 'Users', path: '/admin/users', icon: <Users className="w-full h-full" /> },
+  { label: 'Coaches', path: '/admin/coaches', icon: <User className="w-full h-full" /> },
+  { label: 'Bookings', path: '/admin/bookings', icon: <BookOpen className="w-full h-full" /> },
+];
 
 const sportColors: Record<string, 'blue' | 'green' | 'yellow' | 'red' | 'gray' | 'purple'> = {
   Swimming: 'blue', Fitness: 'green', Tennis: 'purple', Padel: 'yellow', Badminton: 'red',
@@ -13,7 +19,6 @@ const sportColors: Record<string, 'blue' | 'green' | 'yellow' | 'red' | 'gray' |
 
 export function AdminCoaches() {
   const navigate = useNavigate();
-  const { items: sidebarItems, title: sidebarTitle } = useAdminSidebarItems();
   const { coaches, updateCoach } = useCoaches();
   const [search, setSearch] = useState('');
   const [actionError, setActionError] = useState('');
@@ -38,7 +43,7 @@ export function AdminCoaches() {
   const verified = coaches.filter(c => c.verified).length;
 
   return (
-    <DashboardLayout sidebarItems={sidebarItems} sidebarTitle={sidebarTitle}>
+    <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Admin Panel">
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-black text-gray-900">Coaches</h1>

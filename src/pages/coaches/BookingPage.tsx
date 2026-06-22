@@ -4,7 +4,6 @@ import { Calendar, Clock, MapPin, FileText, ArrowLeft, CheckCircle, ShieldCheck,
 import { useCoaches } from '../../contexts/CoachContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBookings } from '../../contexts/BookingContext';
-import { useSettings } from '../../contexts/SettingsContext';
 import { Navbar } from '../../components/layout/Navbar';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
@@ -19,7 +18,6 @@ export function BookingPage() {
   const { getCoach } = useCoaches();
   const { currentUser } = useAuth();
   const { addBooking } = useBookings();
-  const { settings } = useSettings();
   const coach = getCoach(id || '');
 
   const [date, setDate] = useState('');
@@ -60,7 +58,7 @@ export function BookingPage() {
   // Get min date (today)
   const today = new Date().toISOString().split('T')[0];
 
-  const commission = Math.round(coach.pricePerHour * settings.commissionRate);
+  const commission = Math.round(coach.pricePerHour * 0.15);
   const coachEarnings = coach.pricePerHour - commission;
 
   const timeSlots = generateSlots(coach.availabilityStart, coach.availabilityEnd, coach.sessionDuration);

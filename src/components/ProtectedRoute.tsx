@@ -2,11 +2,9 @@ import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
-type Role = 'parent' | 'coach' | 'admin' | 'gm';
-
 interface ProtectedRouteProps {
   children: ReactNode;
-  role?: Role | Role[];
+  role?: 'parent' | 'coach' | 'admin';
 }
 
 export function ProtectedRoute({ children, role }: ProtectedRouteProps) {
@@ -27,11 +25,9 @@ export function ProtectedRoute({ children, role }: ProtectedRouteProps) {
     return <Navigate to="/login" replace />;
   }
 
-  const allowedRoles = role ? (Array.isArray(role) ? role : [role]) : null;
-
-  if (allowedRoles && !allowedRoles.includes(currentUser.role)) {
+  if (role && currentUser.role !== role) {
     // Redirect to appropriate dashboard
-    if (currentUser.role === 'admin' || currentUser.role === 'gm') return <Navigate to="/admin" replace />;
+    if (currentUser.role === 'admin') return <Navigate to="/admin" replace />;
     if (currentUser.role === 'coach') return <Navigate to="/coach/dashboard" replace />;
     return <Navigate to="/parent/home" replace />;
   }

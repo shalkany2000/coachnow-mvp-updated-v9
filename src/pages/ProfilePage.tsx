@@ -11,7 +11,6 @@ const roleConfig = {
   parent: { label: 'Parent', variant: 'blue' as const, desc: 'Finding coaches for your family' },
   coach: { label: 'Coach', variant: 'green' as const, desc: 'Providing training sessions' },
   admin: { label: 'Administrator', variant: 'purple' as const, desc: 'Managing the platform' },
-  gm: { label: 'General Manager', variant: 'yellow' as const, desc: 'Managing platform operations' },
 };
 
 export function ProfilePage() {
@@ -29,7 +28,7 @@ export function ProfilePage() {
   const rc = roleConfig[currentUser.role];
 
   const getDashboardPath = () => {
-    if (currentUser.role === 'admin' || currentUser.role === 'gm') return '/admin';
+    if (currentUser.role === 'admin') return '/admin';
     if (currentUser.role === 'coach') return '/coach/dashboard';
     return '/parent/home';
   };

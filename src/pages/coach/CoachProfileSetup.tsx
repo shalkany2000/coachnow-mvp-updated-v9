@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { LayoutDashboard, User, BookOpen, Calendar, DollarSign, Save, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCoaches } from '../../contexts/CoachContext';
-import { useSettings } from '../../contexts/SettingsContext';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -25,7 +24,6 @@ const LANGUAGES = ['English', 'Arabic', 'Hindi', 'Urdu', 'Filipino', 'French', '
 export function CoachProfileSetup() {
   const { currentUser } = useAuth();
   const { coaches, updateCoach, addCoach } = useCoaches();
-  const { settings } = useSettings();
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -418,7 +416,7 @@ export function CoachProfileSetup() {
               )}
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <p className="text-xs text-gray-400 text-center">
-                  💡 Platform takes {Math.round(settings.commissionRate * 100)}% commission per booking
+                  💡 Platform takes 15% commission per booking
                 </p>
               </div>
             </Card>

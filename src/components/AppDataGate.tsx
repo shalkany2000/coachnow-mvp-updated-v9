@@ -1,7 +1,6 @@
 import { RefreshCw, WifiOff } from 'lucide-react';
 import { useCoaches } from '../contexts/CoachContext';
 import { useBookings } from '../contexts/BookingContext';
-import { useSettings } from '../contexts/SettingsContext';
 
 // Coaches and bookings now live in Firestore instead of localStorage, which
 // means the very first load of each is genuinely asynchronous (a real
@@ -11,9 +10,8 @@ import { useSettings } from '../contexts/SettingsContext';
 export function AppDataGate({ children }: { children: React.ReactNode }) {
   const { loading: coachesLoading, error: coachesError } = useCoaches();
   const { loading: bookingsLoading, error: bookingsError } = useBookings();
-  const { loading: settingsLoading, error: settingsError } = useSettings();
 
-  const error = coachesError || bookingsError || settingsError;
+  const error = coachesError || bookingsError;
 
   if (error) {
     return (
@@ -36,7 +34,7 @@ export function AppDataGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (coachesLoading || bookingsLoading || settingsLoading) {
+  if (coachesLoading || bookingsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center gap-4">
