@@ -68,6 +68,9 @@ export interface Booking {
   status: 'pending' | 'accepted' | 'rejected' | 'completed';
   statusUpdatedAt?: string;
   invoiceNumber?: string;
+  originalPrice?: number; // present only when a discount was applied; price is the final amount charged
+  discountAmount?: number;
+  discountReason?: string;
   paid: boolean;
   paidAt?: string;
   price: number;

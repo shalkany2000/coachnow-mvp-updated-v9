@@ -7,6 +7,7 @@ import { useCoaches } from '../contexts/CoachContext';
 import { buildAdminWhatsAppLink, ADMIN_WHATSAPP_NUMBER } from '../lib/config';
 import { CoachCard } from '../components/coaches/CoachCard';
 import { Navbar } from '../components/layout/Navbar';
+import { AnnouncementBanner } from '../components/AnnouncementBanner';
 
 const SPORT_ICONS: Record<string, string> = {
   Swimming: '🏊',
@@ -57,6 +58,7 @@ export function LandingPage() {
 
   return (
     <div className="min-h-screen bg-white font-sans">
+      <AnnouncementBanner />
       <Navbar />
 
       {/* Hero */}

@@ -78,7 +78,8 @@ function buildInvoicePdf({ invoiceNumber, booking }) {
     doc.fontSize(9).fillColor(gray).text(`${booking.duration} minutes · ${booking.location}`, 60, y + 24, { width: 210 });
     doc.fontSize(10).fillColor(dark).text(formatDate(booking.date), 280, y + 10, { width: 160 });
     doc.fontSize(9).fillColor(gray).text(formatTime(booking.time), 280, y + 24, { width: 160 });
-    doc.fontSize(10).fillColor(dark).font('Helvetica-Bold').text(`AED ${booking.price}`, 460, y + 10, { width: 75, align: 'right' });
+    const lineItemAmount = booking.originalPrice ?? booking.price;
+    doc.fontSize(10).fillColor(dark).font('Helvetica-Bold').text(`AED ${lineItemAmount}`, 460, y + 10, { width: 75, align: 'right' });
     y += 55;
 
     doc.moveTo(50, y).lineTo(545, y).strokeColor('#e5e7eb').stroke();
@@ -86,8 +87,17 @@ function buildInvoicePdf({ invoiceNumber, booking }) {
 
     // Totals
     doc.fontSize(10).font('Helvetica').fillColor(gray).text('Subtotal', 350, y, { width: 120 });
-    doc.fillColor(dark).text(`AED ${booking.price}`, 460, y, { width: 75, align: 'right' });
+    doc.fillColor(dark).text(`AED ${lineItemAmount}`, 460, y, { width: 75, align: 'right' });
     y += 20;
+
+    if (booking.discountAmount) {
+      doc.fontSize(10).font('Helvetica').fillColor('#059669').text(
+        booking.discountReason || 'Discount', 350, y, { width: 120 }
+      );
+      doc.text(`- AED ${booking.discountAmount}`, 460, y, { width: 75, align: 'right' });
+      y += 20;
+    }
+
     doc.fontSize(13).font('Helvetica-Bold').fillColor(dark).text('Total Paid', 350, y, { width: 120 });
     doc.fillColor(blue).text(`AED ${booking.price}`, 460, y, { width: 75, align: 'right' });
 

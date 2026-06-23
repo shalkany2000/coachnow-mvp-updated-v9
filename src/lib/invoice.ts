@@ -10,6 +10,9 @@ interface InvoiceBookingData {
   duration: number;
   location: string;
   price: number;
+  originalPrice?: number;
+  discountAmount?: number;
+  discountReason?: string;
 }
 
 function toInvoiceBookingData(booking: Booking): InvoiceBookingData {
@@ -23,6 +26,9 @@ function toInvoiceBookingData(booking: Booking): InvoiceBookingData {
     duration: booking.duration,
     location: booking.location,
     price: booking.price,
+    originalPrice: booking.originalPrice,
+    discountAmount: booking.discountAmount,
+    discountReason: booking.discountReason,
   };
 }
 
