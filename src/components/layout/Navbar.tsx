@@ -23,15 +23,9 @@ export function Navbar() {
     setBellOpen(!bellOpen);
   };
 
-  const [navToast, setNavToast] = useState<string | null>(null);
-
-  const goToNotification = (link: string) => {
-    console.log('[CoachNow] Notification clicked, navigating to:', link);
-    navigate(link);
+  const handleNotificationClick = (_link: string) => {
     setBellOpen(false);
     setMenuOpen(false);
-    setNavToast(link);
-    setTimeout(() => setNavToast(null), 1500);
   };
 
   const handleLogout = async () => {
@@ -85,7 +79,7 @@ export function Navbar() {
                     open={bellOpen}
                     onToggle={toggleBell}
                     onClose={() => setBellOpen(false)}
-                    onNavigate={goToNotification}
+                    onNavigate={handleNotificationClick}
                   />
                 )}
 
@@ -146,7 +140,7 @@ export function Navbar() {
                 open={bellOpen}
                 onToggle={toggleBell}
                 onClose={() => setBellOpen(false)}
-                onNavigate={goToNotification}
+                onNavigate={handleNotificationClick}
                 size="sm"
               />
             )}
@@ -181,13 +175,6 @@ export function Navbar() {
               <Button fullWidth onClick={() => { navigate('/register'); setMenuOpen(false); }}>Sign Up</Button>
             </div>
           )}
-        </div>
-      )}
-
-      {navToast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm font-medium px-4 py-2.5 rounded-full shadow-lg z-[300] flex items-center gap-2">
-          <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-          Opened {navToast}
         </div>
       )}
     </nav>

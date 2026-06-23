@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { Bell, Calendar, DollarSign, UserPlus, Star, CheckCircle2, XCircle, PartyPopper } from 'lucide-react';
 import { useOutsideClick } from '../../hooks/useOutsideClick';
 import { AppNotification } from '../../hooks/useNotifications';
@@ -71,16 +72,10 @@ export function NotificationBell({ notifications, unreadCount, open, onToggle, o
             </p>
           ) : (
             notifications.map(n => (
-              <button
+              <Link
                 key={n.id}
-                type="button"
-                onClick={(e) => {
-                  alert('DIAGNOSTIC: notification button clicked, link = ' + n.link);
-                  console.log('[CoachNow] Notification button onClick fired:', n.link);
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onNavigate(n.link);
-                }}
+                to={n.link}
+                onClick={() => onNavigate(n.link)}
                 className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors cursor-pointer"
               >
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${notificationColors[n.kind]}`}>
@@ -90,7 +85,7 @@ export function NotificationBell({ notifications, unreadCount, open, onToggle, o
                   <p className="text-sm text-gray-800 leading-snug">{n.message}</p>
                   <p className="text-xs text-gray-400 mt-0.5">{formatRelativeTime(n.timestamp)}</p>
                 </div>
-              </button>
+              </Link>
             ))
           )}
         </div>
