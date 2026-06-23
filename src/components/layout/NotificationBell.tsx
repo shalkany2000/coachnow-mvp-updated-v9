@@ -47,6 +47,7 @@ export function NotificationBell({ notifications, unreadCount, open, onToggle, o
   return (
     <div className="relative" ref={ref}>
       <button
+        type="button"
         onClick={onToggle}
         aria-label="Notifications"
         className={`relative ${btnPad} hover:bg-gray-100 rounded-xl transition-colors`}
@@ -60,7 +61,7 @@ export function NotificationBell({ notifications, unreadCount, open, onToggle, o
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 max-w-[88vw] bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50 max-h-96 overflow-y-auto">
+        <div className="absolute right-0 top-full mt-2 w-80 max-w-[88vw] bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-[200] max-h-96 overflow-y-auto">
           <div className="px-4 py-2 border-b border-gray-100">
             <p className="text-sm font-bold text-gray-900">Notifications</p>
           </div>
@@ -72,8 +73,13 @@ export function NotificationBell({ notifications, unreadCount, open, onToggle, o
             notifications.map(n => (
               <button
                 key={n.id}
-                onClick={() => onNavigate(n.link)}
-                className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onNavigate(n.link);
+                }}
+                className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors cursor-pointer"
               >
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${notificationColors[n.kind]}`}>
                   {notificationIcons[n.kind]}
