@@ -5,6 +5,7 @@ import { useCoaches } from '../../contexts/CoachContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBookings } from '../../contexts/BookingContext';
 import { useSettings } from '../../contexts/SettingsContext';
+import { isSeedCoach, isSportLive } from '../../lib/sports';
 import { Navbar } from '../../components/layout/Navbar';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
@@ -16,7 +17,7 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export function BookingPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getCoach } = useCoaches();
+  const { getCoach, coaches } = useCoaches();
   const { currentUser } = useAuth();
   const { addBooking, getBookingsForParent } = useBookings();
   const { settings } = useSettings();
@@ -29,7 +30,9 @@ export function BookingPage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
 
-  if (!coach) {
+  const isHidden = coach && isSeedCoach(coach) && !isSportLive(coach.sportType, coaches);
+
+  if (!coach || isHidden) {
     return (
       <div className="min-h-screen bg-gray-50"><Navbar />
         <div className="flex items-center justify-center h-64">

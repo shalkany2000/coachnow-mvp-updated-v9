@@ -4,6 +4,7 @@ import { MapPin, Star, Clock, CheckCircle, Globe, Calendar, ArrowLeft, Share2 } 
 import { useCoaches } from '../../contexts/CoachContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useReviews } from '../../contexts/ReviewContext';
+import { isSeedCoach, isSportLive } from '../../lib/sports';
 import { Navbar } from '../../components/layout/Navbar';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -17,14 +18,15 @@ const sportColors: Record<string, 'blue' | 'green' | 'yellow' | 'red' | 'gray' |
 export function CoachProfilePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getCoach } = useCoaches();
+  const { getCoach, coaches } = useCoaches();
   const { currentUser } = useAuth();
   const { getReviewsForCoach } = useReviews();
   const coach = getCoach(id || '');
   const [copied, setCopied] = useState(false);
   const reviews = coach ? getReviewsForCoach(coach.id) : [];
+  const isHidden = coach && isSeedCoach(coach) && !isSportLive(coach.sportType, coaches);
 
-  if (!coach) {
+  if (!coach || isHidden) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Navbar />

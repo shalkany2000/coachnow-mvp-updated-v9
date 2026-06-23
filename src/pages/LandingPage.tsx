@@ -4,6 +4,7 @@ import { Dumbbell, Search, Star, Shield, Clock, ChevronRight, MapPin, Users, Awa
 import { Button } from '../components/ui/Button';
 import { SPORT_TYPES } from '../lib/mockData';
 import { useCoaches } from '../contexts/CoachContext';
+import { visibleCoaches, isSportLive } from '../lib/sports';
 import { buildAdminWhatsAppLink, ADMIN_WHATSAPP_NUMBER } from '../lib/config';
 import { CoachCard } from '../components/coaches/CoachCard';
 import { Navbar } from '../components/layout/Navbar';
@@ -49,7 +50,7 @@ export function LandingPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const { coaches } = useCoaches();
-  const featuredCoaches = [...coaches].filter(c => c.verified && !c.onLeave).sort((a, b) => b.rating - a.rating).slice(0, 3);
+  const featuredCoaches = visibleCoaches(coaches).filter(c => c.verified && !c.onLeave).sort((a, b) => b.rating - a.rating).slice(0, 3);
 
   const handleSearch = () => {
     const q = query.trim();
@@ -156,16 +157,24 @@ export function LandingPage() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Browse by Sport</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-          {SPORT_TYPES.map((sport) => (
-            <button
-              key={sport}
-              onClick={() => navigate(`/coaches?sport=${sport}`)}
-              className="flex flex-col items-center gap-2 p-4 bg-gray-50 hover:bg-blue-50 hover:border-blue-200 border border-transparent rounded-2xl transition-all duration-200 group"
-            >
-              <span className="text-2xl">{SPORT_ICONS[sport] || '🏋️'}</span>
-              <span className="text-xs font-semibold text-gray-600 group-hover:text-blue-700 text-center leading-tight">{sport}</span>
-            </button>
-          ))}
+          {SPORT_TYPES.map((sport) => {
+            const live = isSportLive(sport, coaches);
+            return (
+              <button
+                key={sport}
+                onClick={() => navigate(`/coaches?sport=${sport}`)}
+                className="relative flex flex-col items-center gap-2 p-4 bg-gray-50 hover:bg-blue-50 hover:border-blue-200 border border-transparent rounded-2xl transition-all duration-200 group"
+              >
+                {!live && (
+                  <span className="absolute top-1.5 right-1.5 text-[9px] font-semibold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">
+                    Soon
+                  </span>
+                )}
+                <span className="text-2xl">{SPORT_ICONS[sport] || '🏋️'}</span>
+                <span className="text-xs font-semibold text-gray-600 group-hover:text-blue-700 text-center leading-tight">{sport}</span>
+              </button>
+            );
+          })}
         </div>
       </section>
 

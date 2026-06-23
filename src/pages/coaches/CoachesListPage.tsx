@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { useCoaches } from '../../contexts/CoachContext';
 import { SPORT_TYPES, DUBAI_AREAS } from '../../lib/mockData';
+import { visibleCoaches, isSportLive } from '../../lib/sports';
 import { CoachCard } from '../../components/coaches/CoachCard';
 import { Navbar } from '../../components/layout/Navbar';
 import { Button } from '../../components/ui/Button';
@@ -25,7 +26,7 @@ export function CoachesListPage() {
     if (q) setSearch(q);
   }, [searchParams]);
 
-  const filtered = coaches.filter(coach => {
+  const filtered = visibleCoaches(coaches).filter(coach => {
     if (coach.onLeave) return false;
     if (search && !coach.name.toLowerCase().includes(search.toLowerCase()) &&
       !coach.bio.toLowerCase().includes(search.toLowerCase()) &&
@@ -95,7 +96,9 @@ export function CoachesListPage() {
                   className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">All Sports</option>
-                  {SPORT_TYPES.map(s => <option key={s} value={s}>{s}</option>)}
+                  {SPORT_TYPES.map(s => (
+                    <option key={s} value={s}>{s}{!isSportLive(s, coaches) ? ' (Coming Soon)' : ''}</option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -161,25 +164,45 @@ export function CoachesListPage() {
           >
             All Sports
           </button>
-          {SPORT_TYPES.map(sport => (
-            <button
-              key={sport}
-              onClick={() => setSportFilter(sport === sportFilter ? '' : sport)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${sportFilter === sport ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-blue-300'}`}
-            >
-              {sport}
-            </button>
-          ))}
+          {SPORT_TYPES.map(sport => {
+            const live = isSportLive(sport, coaches);
+            return (
+              <button
+                key={sport}
+                onClick={() => setSportFilter(sport === sportFilter ? '' : sport)}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${sportFilter === sport ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-blue-300'}`}
+              >
+                {sport}
+                {!live && (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${sportFilter === sport ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-700'}`}>
+                    Soon
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* Results */}
         {filtered.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="text-5xl mb-4">🔍</div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">No coaches found</h3>
-            <p className="text-gray-500 mb-6">Try adjusting your filters or search terms.</p>
-            <Button onClick={clearFilters}>Clear Filters</Button>
-          </div>
+          sportFilter && !isSportLive(sportFilter, coaches) ? (
+            <div className="text-center py-20">
+              <div className="text-5xl mb-4">🚀</div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">{sportFilter} coaches coming soon!</h3>
+              <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                We don't have a {sportFilter.toLowerCase()} coach on CoachNow just yet — but we're actively
+                onboarding trainers. Check back soon, or browse another sport in the meantime.
+              </p>
+              <Button onClick={clearFilters}>Browse All Coaches</Button>
+            </div>
+          ) : (
+            <div className="text-center py-20">
+              <div className="text-5xl mb-4">🔍</div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">No coaches found</h3>
+              <p className="text-gray-500 mb-6">Try adjusting your filters or search terms.</p>
+              <Button onClick={clearFilters}>Clear Filters</Button>
+            </div>
+          )
         ) : (
           <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
             {filtered.map(coach => (

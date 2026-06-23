@@ -6,7 +6,6 @@ import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Card } from '../../components/ui/Card';
 import { BookingCard } from '../../components/bookings/BookingCard';
 import { useAdminSidebarItems } from '../../hooks/useAdminSidebarItems';
-import { emailInvoice } from '../../lib/invoice';
 import { buildAdminWhatsAppLink } from '../../lib/config';
 
 const TABS = ['All', 'Pending', 'Accepted', 'Completed', 'Rejected'];
@@ -26,7 +25,6 @@ export function AdminBookings() {
       const invoiceNumber = await markBookingPaid(id);
       const booking = bookings.find((b) => b.id === id);
       if (booking && invoiceNumber) {
-        emailInvoice(invoiceNumber, booking);
         // A new tab opened via window.open() after these awaited Firestore
         // writes is no longer tied to the original click, so most browsers
         // silently block it as a popup. Showing a real link for the admin
@@ -121,13 +119,13 @@ export function AdminBookings() {
           <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
             <div>
               <p className="text-sm font-semibold text-emerald-800">
-                Payment confirmed — Invoice {paidConfirmation.invoiceNumber} emailed to {paidConfirmation.booking.parentEmail}
+                Payment confirmed — Invoice {paidConfirmation.invoiceNumber} ready
               </p>
               <p className="text-xs text-emerald-600 mt-0.5">Send them a WhatsApp confirmation too:</p>
             </div>
             <a
               href={buildAdminWhatsAppLink(
-                `Hi ${paidConfirmation.booking.parentName}, your payment of AED ${paidConfirmation.booking.price} for your ${paidConfirmation.booking.sportType} session with ${paidConfirmation.booking.coachName} is confirmed ✅\n\nInvoice ${paidConfirmation.invoiceNumber} has been emailed to ${paidConfirmation.booking.parentEmail}. Thank you for booking with CoachNow!`
+                `Hi ${paidConfirmation.booking.parentName}, your payment of AED ${paidConfirmation.booking.price} for your ${paidConfirmation.booking.sportType} session with ${paidConfirmation.booking.coachName} is confirmed ✅\n\nInvoice: ${paidConfirmation.invoiceNumber}. Thank you for booking with CoachNow!`
               )}
               target="_blank"
               rel="noreferrer"

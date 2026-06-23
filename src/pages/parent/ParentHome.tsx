@@ -3,6 +3,7 @@ import { Search, Calendar, Star, ChevronRight, TrendingUp } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBookings } from '../../contexts/BookingContext';
 import { useCoaches } from '../../contexts/CoachContext';
+import { visibleCoaches } from '../../lib/sports';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -33,7 +34,7 @@ export function ParentHome() {
 
   const bookings = currentUser ? getBookingsForParent(currentUser.id, currentUser.email) : [];
   const upcomingBookings = bookings.filter(b => b.status === 'pending' || b.status === 'accepted').slice(0, 3);
-  const topCoaches = coaches.filter(c => c.verified && !c.onLeave).sort((a, b) => b.rating - a.rating).slice(0, 3);
+  const topCoaches = visibleCoaches(coaches).filter(c => c.verified && !c.onLeave).sort((a, b) => b.rating - a.rating).slice(0, 3);
 
   const firstName = currentUser?.name.split(' ')[0] || 'there';
 
