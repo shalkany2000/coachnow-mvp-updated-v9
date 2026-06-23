@@ -4,19 +4,9 @@ import { db } from '../lib/firebase';
 
 export interface PlatformSettings {
   commissionRate: number; // e.g. 0.15 means 15%
-  firstBookingDiscountEnabled: boolean;
-  firstBookingDiscountPercent: number; // e.g. 50 means 50% off
-  announcementEnabled: boolean;
-  announcementMessage: string;
 }
 
-const DEFAULT_SETTINGS: PlatformSettings = {
-  commissionRate: 0.15,
-  firstBookingDiscountEnabled: true,
-  firstBookingDiscountPercent: 50,
-  announcementEnabled: true,
-  announcementMessage: '🎉 New here? Get 50% off your first booking — automatically applied at checkout.',
-};
+const DEFAULT_SETTINGS: PlatformSettings = { commissionRate: 0.15 };
 const DOC_PATH = ['settings', 'platform'] as const;
 
 interface SettingsContextType {

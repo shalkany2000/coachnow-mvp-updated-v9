@@ -1,107 +1,40 @@
 import { useState, useEffect } from 'react';
-import { Percent, CheckCircle, AlertCircle, Info, Gift, Megaphone } from 'lucide-react';
+import { Percent, CheckCircle, AlertCircle, Info } from 'lucide-react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useAdminSidebarItems } from '../../hooks/useAdminSidebarItems';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 
-function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      onClick={onChange}
-      className={`relative flex-shrink-0 w-12 h-7 rounded-full transition-colors ${checked ? 'bg-blue-600' : 'bg-gray-300'}`}
-    >
-      <span className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${checked ? 'translate-x-5' : ''}`} />
-    </button>
-  );
-}
-
 export function AdminSettings() {
   const { items: sidebarItems, title: sidebarTitle } = useAdminSidebarItems();
   const { settings, updateSettings } = useSettings();
-
-  // Commission
   const [rateInput, setRateInput] = useState(String(Math.round(settings.commissionRate * 100)));
-  const [rateLoading, setRateLoading] = useState(false);
-  const [rateSaved, setRateSaved] = useState(false);
-  const [rateError, setRateError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
 
-  // First-booking discount
-  const [discountEnabled, setDiscountEnabled] = useState(settings.firstBookingDiscountEnabled);
-  const [discountInput, setDiscountInput] = useState(String(settings.firstBookingDiscountPercent));
-  const [discountLoading, setDiscountLoading] = useState(false);
-  const [discountSaved, setDiscountSaved] = useState(false);
-  const [discountError, setDiscountError] = useState('');
+  useEffect(() => {
+    setRateInput(String(Math.round(settings.commissionRate * 100)));
+  }, [settings.commissionRate]);
 
-  // Announcement
-  const [announceEnabled, setAnnounceEnabled] = useState(settings.announcementEnabled);
-  const [announceInput, setAnnounceInput] = useState(settings.announcementMessage);
-  const [announceLoading, setAnnounceLoading] = useState(false);
-  const [announceSaved, setAnnounceSaved] = useState(false);
-  const [announceError, setAnnounceError] = useState('');
-
-  useEffect(() => { setRateInput(String(Math.round(settings.commissionRate * 100))); }, [settings.commissionRate]);
-  useEffect(() => { setDiscountEnabled(settings.firstBookingDiscountEnabled); }, [settings.firstBookingDiscountEnabled]);
-  useEffect(() => { setDiscountInput(String(settings.firstBookingDiscountPercent)); }, [settings.firstBookingDiscountPercent]);
-  useEffect(() => { setAnnounceEnabled(settings.announcementEnabled); }, [settings.announcementEnabled]);
-  useEffect(() => { setAnnounceInput(settings.announcementMessage); }, [settings.announcementMessage]);
-
-  const handleSaveRate = async () => {
-    setRateError(''); setRateSaved(false);
+  const handleSave = async () => {
+    setError(''); setSaved(false);
     const percent = parseFloat(rateInput);
     if (isNaN(percent) || percent < 0 || percent > 100) {
-      setRateError('Enter a commission percentage between 0 and 100.');
+      setError('Enter a commission percentage between 0 and 100.');
       return;
     }
-    setRateLoading(true);
+    setLoading(true);
     try {
       await updateSettings({ commissionRate: percent / 100 });
-      setRateSaved(true);
-      setTimeout(() => setRateSaved(false), 3000);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
     } catch (err) {
-      console.error('Failed to save commission rate:', err);
-      setRateError("Couldn't save — check your connection and try again.");
+      console.error('Failed to save settings:', err);
+      setError("Couldn't save — check your connection and try again.");
     } finally {
-      setRateLoading(false);
-    }
-  };
-
-  const handleSaveDiscount = async () => {
-    setDiscountError(''); setDiscountSaved(false);
-    const percent = parseFloat(discountInput);
-    if (isNaN(percent) || percent < 0 || percent > 100) {
-      setDiscountError('Enter a discount percentage between 0 and 100.');
-      return;
-    }
-    setDiscountLoading(true);
-    try {
-      await updateSettings({ firstBookingDiscountEnabled: discountEnabled, firstBookingDiscountPercent: percent });
-      setDiscountSaved(true);
-      setTimeout(() => setDiscountSaved(false), 3000);
-    } catch (err) {
-      console.error('Failed to save discount settings:', err);
-      setDiscountError("Couldn't save — check your connection and try again.");
-    } finally {
-      setDiscountLoading(false);
-    }
-  };
-
-  const handleSaveAnnouncement = async () => {
-    setAnnounceError(''); setAnnounceSaved(false);
-    setAnnounceLoading(true);
-    try {
-      await updateSettings({ announcementEnabled: announceEnabled, announcementMessage: announceInput.trim() });
-      setAnnounceSaved(true);
-      setTimeout(() => setAnnounceSaved(false), 3000);
-    } catch (err) {
-      console.error('Failed to save announcement:', err);
-      setAnnounceError("Couldn't save — check your connection and try again.");
-    } finally {
-      setAnnounceLoading(false);
+      setLoading(false);
     }
   };
 
@@ -113,7 +46,6 @@ export function AdminSettings() {
           <p className="text-gray-500 mt-1">Platform-level settings — only visible to admins.</p>
         </div>
 
-        {/* Commission */}
         <Card>
           <div className="flex items-center gap-2 mb-1">
             <Percent className="w-5 h-5 text-blue-600" />
@@ -145,111 +77,20 @@ export function AdminSettings() {
             </p>
           </div>
 
-          {rateError && (
+          {error && (
             <div className="flex items-center gap-2 text-sm text-red-600 font-medium mt-4">
               <AlertCircle className="w-4 h-4" />
-              {rateError}
+              {error}
             </div>
           )}
-          {rateSaved && (
+          {saved && (
             <div className="flex items-center gap-2 text-sm text-emerald-600 font-medium mt-4">
               <CheckCircle className="w-4 h-4" />
               Saved — new bookings will use the updated rate.
             </div>
           )}
 
-          <Button onClick={handleSaveRate} loading={rateLoading} className="mt-4">
-            Save Changes
-          </Button>
-        </Card>
-
-        {/* First booking discount */}
-        <Card>
-          <div className="flex items-start justify-between gap-4 mb-1">
-            <div className="flex items-center gap-2">
-              <Gift className="w-5 h-5 text-emerald-600" />
-              <h2 className="font-bold text-gray-900">First Booking Discount</h2>
-            </div>
-            <Toggle checked={discountEnabled} onChange={() => setDiscountEnabled(!discountEnabled)} />
-          </div>
-          <p className="text-sm text-gray-500 mb-4">
-            Automatically applied the moment a parent books for the very first time — no code needed,
-            no action from them. It only ever applies once per customer.
-          </p>
-
-          <label className="text-sm font-medium text-gray-700 block mb-1.5">Discount (%)</label>
-          <div className="flex items-center gap-3 max-w-xs">
-            <input
-              type="number"
-              min={0}
-              max={100}
-              step={5}
-              value={discountInput}
-              onChange={(e) => setDiscountInput(e.target.value)}
-              disabled={!discountEnabled}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all disabled:opacity-50"
-            />
-            <span className="text-gray-400 font-medium">%</span>
-          </div>
-
-          {discountError && (
-            <div className="flex items-center gap-2 text-sm text-red-600 font-medium mt-4">
-              <AlertCircle className="w-4 h-4" />
-              {discountError}
-            </div>
-          )}
-          {discountSaved && (
-            <div className="flex items-center gap-2 text-sm text-emerald-600 font-medium mt-4">
-              <CheckCircle className="w-4 h-4" />
-              Saved.
-            </div>
-          )}
-
-          <Button onClick={handleSaveDiscount} loading={discountLoading} className="mt-4">
-            Save Changes
-          </Button>
-        </Card>
-
-        {/* Homepage announcement */}
-        <Card>
-          <div className="flex items-start justify-between gap-4 mb-1">
-            <div className="flex items-center gap-2">
-              <Megaphone className="w-5 h-5 text-indigo-600" />
-              <h2 className="font-bold text-gray-900">Homepage Announcement</h2>
-            </div>
-            <Toggle checked={announceEnabled} onChange={() => setAnnounceEnabled(!announceEnabled)} />
-          </div>
-          <p className="text-sm text-gray-500 mb-4">
-            A banner shown at the top of the homepage to every visitor. They can dismiss it — it
-            reappears for them only if you change the message afterward.
-          </p>
-
-          <label className="text-sm font-medium text-gray-700 block mb-1.5">Message</label>
-          <textarea
-            value={announceInput}
-            onChange={(e) => setAnnounceInput(e.target.value)}
-            disabled={!announceEnabled}
-            rows={2}
-            maxLength={140}
-            placeholder="e.g. 🎉 New here? Get 50% off your first booking — automatically applied at checkout."
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all disabled:opacity-50 resize-none"
-          />
-          <p className="text-xs text-gray-400 mt-1 text-right">{announceInput.length}/140</p>
-
-          {announceError && (
-            <div className="flex items-center gap-2 text-sm text-red-600 font-medium mt-2">
-              <AlertCircle className="w-4 h-4" />
-              {announceError}
-            </div>
-          )}
-          {announceSaved && (
-            <div className="flex items-center gap-2 text-sm text-emerald-600 font-medium mt-2">
-              <CheckCircle className="w-4 h-4" />
-              Saved — live on the homepage now.
-            </div>
-          )}
-
-          <Button onClick={handleSaveAnnouncement} loading={announceLoading} className="mt-4">
+          <Button onClick={handleSave} loading={loading} className="mt-4">
             Save Changes
           </Button>
         </Card>

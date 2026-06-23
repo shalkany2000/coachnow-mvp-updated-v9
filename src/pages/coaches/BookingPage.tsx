@@ -18,7 +18,7 @@ export function BookingPage() {
   const navigate = useNavigate();
   const { getCoach } = useCoaches();
   const { currentUser } = useAuth();
-  const { addBooking, getBookingsForParent } = useBookings();
+  const { addBooking } = useBookings();
   const { settings } = useSettings();
   const coach = getCoach(id || '');
 
@@ -60,29 +60,14 @@ export function BookingPage() {
   // Get min date (today)
   const today = new Date().toISOString().split('T')[0];
 
-  // A parent's very first booking ever (regardless of its eventual status)
-  // gets the discount — checking "do they have any prior booking at all"
-  // rather than "any paid one" keeps this simple and not gameable by
-  // cancelling and re-booking.
-  const isFirstBooking = currentUser
-    ? getBookingsForParent(currentUser.id, currentUser.email).length === 0
-    : false;
-  const discountApplies = settings.firstBookingDiscountEnabled && isFirstBooking;
-
-  const originalPrice = coach.pricePerHour;
-  const discountAmount = discountApplies
-    ? Math.round(originalPrice * (settings.firstBookingDiscountPercent / 100))
-    : 0;
-  const finalPrice = originalPrice - discountAmount;
-
-  const commission = Math.round(finalPrice * settings.commissionRate);
-  const coachEarnings = finalPrice - commission;
+  const commission = Math.round(coach.pricePerHour * settings.commissionRate);
+  const coachEarnings = coach.pricePerHour - commission;
 
   const timeSlots = generateSlots(coach.availabilityStart, coach.availabilityEnd, coach.sessionDuration);
   const selectedDayName = date ? DAY_NAMES[new Date(date + 'T00:00:00').getDay()] : null;
   const isDayAvailable = !selectedDayName || coach.availability.includes(selectedDayName);
 
-  const adminMessage = `Hi, I just booked a session on CoachNow and I'd like to pay.\n\nCoach: ${coach.name}\nSport: ${coach.sportType}\nDate: ${date}\nTime: ${time ? formatTime(time) : ''}\nDuration: ${coach.sessionDuration} min\n${discountApplies ? `Price: AED ${originalPrice} - ${settings.firstBookingDiscountPercent}% first-booking discount = AED ${finalPrice}` : `Price: AED ${finalPrice}`}`;
+  const adminMessage = `Hi, I just booked a session on CoachNow and I'd like to pay.\n\nCoach: ${coach.name}\nSport: ${coach.sportType}\nDate: ${date}\nTime: ${time ? formatTime(time) : ''}\nDuration: ${coach.sessionDuration} min\nPrice: AED ${coach.pricePerHour}`;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,16 +90,11 @@ export function BookingPage() {
         duration: coach.sessionDuration,
         status: 'pending',
         paid: false,
-        price: finalPrice,
+        price: coach.pricePerHour,
         commission,
         coachEarnings,
         location: coach.location,
         notes,
-        ...(discountApplies ? {
-          originalPrice,
-          discountAmount,
-          discountReason: 'First booking discount',
-        } : {}),
       });
       setSuccess(true);
     } catch (err) {
@@ -158,21 +138,9 @@ export function BookingPage() {
                 <span className="text-gray-500">Duration</span>
                 <span className="font-semibold text-gray-800">{coach.sessionDuration} minutes</span>
               </div>
-              {discountApplies && (
-                <>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Original price</span>
-                    <span className="text-gray-400 line-through">AED {originalPrice}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-emerald-600">First booking discount ({settings.firstBookingDiscountPercent}%)</span>
-                    <span className="font-semibold text-emerald-600">- AED {discountAmount}</span>
-                  </div>
-                </>
-              )}
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Price</span>
-                <span className="font-bold text-blue-600">AED {finalPrice}</span>
+                <span className="font-bold text-blue-600">AED {coach.pricePerHour}</span>
               </div>
             </div>
 
@@ -213,18 +181,6 @@ export function BookingPage() {
         </button>
 
         <h1 className="text-2xl font-black text-gray-900 mb-6">Book a Session</h1>
-
-        {discountApplies && (
-          <div className="bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl px-5 py-4 mb-6 flex items-center gap-3 shadow-sm">
-            <span className="text-2xl">🎉</span>
-            <div>
-              <p className="text-white font-bold text-sm">Welcome to CoachNow!</p>
-              <p className="text-emerald-50 text-xs mt-0.5">
-                This is your first booking — we've automatically applied a {settings.firstBookingDiscountPercent}% discount.
-              </p>
-            </div>
-          </div>
-        )}
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Form */}
@@ -378,30 +334,10 @@ export function BookingPage() {
                   <span className="text-gray-500">Duration</span>
                   <span className="font-medium text-gray-800">{coach.sessionDuration} minutes</span>
                 </div>
-                {discountApplies && (
-                  <div className="bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 flex items-center gap-2">
-                    <span className="text-base">🎉</span>
-                    <span className="text-xs font-semibold text-emerald-700">
-                      First booking discount applied — {settings.firstBookingDiscountPercent}% off!
-                    </span>
-                  </div>
-                )}
                 <div className="border-t border-gray-100 pt-3 mt-3">
-                  {discountApplies && (
-                    <>
-                      <div className="flex justify-between text-sm mb-1.5">
-                        <span className="text-gray-500">Original price</span>
-                        <span className="text-gray-400 line-through">AED {originalPrice}</span>
-                      </div>
-                      <div className="flex justify-between text-sm mb-1.5">
-                        <span className="text-emerald-600">Discount</span>
-                        <span className="font-medium text-emerald-600">- AED {discountAmount}</span>
-                      </div>
-                    </>
-                  )}
                   <div className="flex justify-between text-base font-bold">
                     <span className="text-gray-800">Total</span>
-                    <span className="text-blue-600">AED {finalPrice}</span>
+                    <span className="text-blue-600">AED {coach.pricePerHour}</span>
                   </div>
                   <p className="text-xs text-gray-400 mt-1.5">
                     Pay securely online via the link our team sends on WhatsApp
