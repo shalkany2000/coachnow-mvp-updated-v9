@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Menu, X, ChevronDown, LogOut, User, LayoutDashboard } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useOutsideClick } from '../../hooks/useOutsideClick';
-import { useAdminNotifications } from '../../hooks/useAdminNotifications';
+import { useNotifications } from '../../hooks/useNotifications';
 import { NotificationBell } from './NotificationBell';
 
 export function Navbar() {
@@ -14,8 +14,7 @@ export function Navbar() {
   const [dropOpen, setDropOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
-  const isAdmin = currentUser?.role === 'admin';
-  const { notifications, unreadCount, markAllSeen } = useAdminNotifications();
+  const { notifications, unreadCount, markAllSeen } = useNotifications();
 
   useOutsideClick(dropRef, () => setDropOpen(false), dropOpen);
 
@@ -38,7 +37,7 @@ export function Navbar() {
 
   const getDashboardPath = () => {
     if (!currentUser) return '/';
-    if (currentUser.role === 'admin') return '/admin';
+    if (currentUser.role === 'admin' || currentUser.role === 'gm') return '/admin';
     if (currentUser.role === 'coach') return '/coach/dashboard';
     return '/parent/home';
   };
@@ -74,7 +73,7 @@ export function Navbar() {
               </div>
             ) : (
               <div className="flex items-center gap-3">
-                {isAdmin && (
+                {currentUser && (
                   <NotificationBell
                     notifications={notifications}
                     unreadCount={unreadCount}
@@ -135,7 +134,7 @@ export function Navbar() {
 
           {/* Mobile toggle */}
           <div className="md:hidden flex items-center gap-1">
-            {isAdmin && (
+            {currentUser && (
               <NotificationBell
                 notifications={notifications}
                 unreadCount={unreadCount}

@@ -60,9 +60,15 @@ export function CoachCard({ coach }: { coach: Coach }) {
       {/* Stats */}
       <div className="flex items-center gap-4 text-sm text-gray-600">
         <div className="flex items-center gap-1">
-          <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-          <span className="font-semibold text-gray-800">{coach.rating}</span>
-          <span className="text-gray-400">({coach.reviewCount})</span>
+          {coach.reviewCount > 0 ? (
+            <>
+              <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+              <span className="font-semibold text-gray-800">{coach.rating}</span>
+              <span className="text-gray-400">({coach.reviewCount})</span>
+            </>
+          ) : (
+            <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">New</span>
+          )}
         </div>
         <div className="flex items-center gap-1">
           <MapPin className="w-4 h-4 text-gray-400" />

@@ -1,29 +1,39 @@
 import { useState } from 'react';
-import { LayoutDashboard, Users, User, BookOpen, Search, DollarSign } from 'lucide-react';
+import { BookOpen, Search, DollarSign } from 'lucide-react';
 import { useBookings } from '../../contexts/BookingContext';
+import { Booking } from '../../lib/mockData';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Card } from '../../components/ui/Card';
 import { BookingCard } from '../../components/bookings/BookingCard';
-
-const sidebarItems = [
-  { label: 'Overview', path: '/admin', icon: <LayoutDashboard className="w-full h-full" /> },
-  { label: 'Users', path: '/admin/users', icon: <Users className="w-full h-full" /> },
-  { label: 'Coaches', path: '/admin/coaches', icon: <User className="w-full h-full" /> },
-  { label: 'Bookings', path: '/admin/bookings', icon: <BookOpen className="w-full h-full" /> },
-];
+import { useAdminSidebarItems } from '../../hooks/useAdminSidebarItems';
+import { emailInvoice } from '../../lib/invoice';
+import { buildAdminWhatsAppLink } from '../../lib/config';
 
 const TABS = ['All', 'Pending', 'Accepted', 'Completed', 'Rejected'];
 
 export function AdminBookings() {
+  const { items: sidebarItems, title: sidebarTitle } = useAdminSidebarItems();
   const { bookings, markBookingPaid } = useBookings();
   const [activeTab, setActiveTab] = useState('All');
   const [search, setSearch] = useState('');
   const [actionError, setActionError] = useState('');
+  const [paidConfirmation, setPaidConfirmation] = useState<{ booking: Booking; invoiceNumber: string } | null>(null);
 
   const handleMarkPaid = async (id: string) => {
     setActionError('');
+    setPaidConfirmation(null);
     try {
-      await markBookingPaid(id);
+      const invoiceNumber = await markBookingPaid(id);
+      const booking = bookings.find((b) => b.id === id);
+      if (booking && invoiceNumber) {
+        emailInvoice(invoiceNumber, booking);
+        // A new tab opened via window.open() after these awaited Firestore
+        // writes is no longer tied to the original click, so most browsers
+        // silently block it as a popup. Showing a real link for the admin
+        // to click themselves avoids that entirely, and matches how the
+        // booking page itself already hands off to WhatsApp.
+        setPaidConfirmation({ booking, invoiceNumber });
+      }
     } catch (err) {
       console.error('Failed to mark booking as paid:', err);
       setActionError("Couldn't update that booking — check your connection and try again.");
@@ -42,7 +52,7 @@ export function AdminBookings() {
   const totalCommission = bookings.filter(b => b.status === 'completed').reduce((s, b) => s + b.commission, 0);
 
   return (
-    <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Admin Panel">
+    <DashboardLayout sidebarItems={sidebarItems} sidebarTitle={sidebarTitle}>
       <div className="space-y-6">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -104,6 +114,28 @@ export function AdminBookings() {
         {actionError && (
           <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-sm text-red-600 font-medium">
             {actionError}
+          </div>
+        )}
+
+        {paidConfirmation && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <p className="text-sm font-semibold text-emerald-800">
+                Payment confirmed — Invoice {paidConfirmation.invoiceNumber} emailed to {paidConfirmation.booking.parentEmail}
+              </p>
+              <p className="text-xs text-emerald-600 mt-0.5">Send them a WhatsApp confirmation too:</p>
+            </div>
+            <a
+              href={buildAdminWhatsAppLink(
+                `Hi ${paidConfirmation.booking.parentName}, your payment of AED ${paidConfirmation.booking.price} for your ${paidConfirmation.booking.sportType} session with ${paidConfirmation.booking.coachName} is confirmed ✅\n\nInvoice ${paidConfirmation.invoiceNumber} has been emailed to ${paidConfirmation.booking.parentEmail}. Thank you for booking with CoachNow!`
+              )}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => setPaidConfirmation(null)}
+              className="flex items-center gap-2 bg-[#25D366] hover:bg-[#1ebe5a] text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors flex-shrink-0"
+            >
+              Send on WhatsApp
+            </a>
           </div>
         )}
 

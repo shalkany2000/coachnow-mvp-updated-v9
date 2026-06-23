@@ -1,6 +1,8 @@
-import { Calendar, Clock, MapPin, DollarSign, ChevronRight } from 'lucide-react';
+import { useState } from 'react';
+import { Calendar, Clock, MapPin, DollarSign, ChevronRight, FileDown } from 'lucide-react';
 import { Booking } from '../../lib/mockData';
 import { formatTime } from '../../utils/time';
+import { downloadInvoice } from '../../lib/invoice';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 
@@ -22,6 +24,22 @@ const statusConfig = {
 
 export function BookingCard({ booking, role, onAccept, onReject, onComplete, onMarkPaid }: BookingCardProps) {
   const status = statusConfig[booking.status];
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState('');
+
+  const handleDownloadInvoice = async () => {
+    if (!booking.invoiceNumber) return;
+    setDownloading(true);
+    setDownloadError('');
+    try {
+      await downloadInvoice(booking.invoiceNumber, booking);
+    } catch (err) {
+      console.error('Failed to download invoice:', err);
+      setDownloadError("Couldn't download — check your connection and try again.");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -87,6 +105,24 @@ export function BookingCard({ booking, role, onAccept, onReject, onComplete, onM
           <p className="text-xs text-gray-500 mb-0.5 font-medium">Notes</p>
           <p className="text-sm text-gray-700">{booking.notes}</p>
         </div>
+      )}
+
+      {/* Invoice */}
+      {booking.invoiceNumber && (
+        <div className="flex items-center justify-between gap-3 bg-blue-50 rounded-xl px-3 py-2.5">
+          <span className="text-sm font-medium text-blue-700">Invoice {booking.invoiceNumber}</span>
+          <button
+            onClick={handleDownloadInvoice}
+            disabled={downloading}
+            className="flex items-center gap-1.5 text-xs font-semibold text-blue-700 hover:text-blue-800 disabled:opacity-50"
+          >
+            <FileDown className="w-3.5 h-3.5" />
+            {downloading ? 'Preparing...' : 'Download PDF'}
+          </button>
+        </div>
+      )}
+      {downloadError && (
+        <p className="text-xs text-red-600 font-medium">{downloadError}</p>
       )}
 
       {/* Actions */}

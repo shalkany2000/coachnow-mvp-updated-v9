@@ -1,7 +1,7 @@
 import { useRef } from 'react';
-import { Bell, Calendar, DollarSign, UserPlus, Star } from 'lucide-react';
+import { Bell, Calendar, DollarSign, UserPlus, Star, CheckCircle2, XCircle, PartyPopper } from 'lucide-react';
 import { useOutsideClick } from '../../hooks/useOutsideClick';
-import { AdminNotification } from '../../hooks/useAdminNotifications';
+import { AppNotification } from '../../hooks/useNotifications';
 import { formatRelativeTime } from '../../utils/time';
 
 const notificationIcons = {
@@ -9,10 +9,23 @@ const notificationIcons = {
   payment: <DollarSign className="w-4 h-4" />,
   signup: <UserPlus className="w-4 h-4" />,
   review: <Star className="w-4 h-4" />,
+  accepted: <CheckCircle2 className="w-4 h-4" />,
+  rejected: <XCircle className="w-4 h-4" />,
+  completed: <PartyPopper className="w-4 h-4" />,
+};
+
+const notificationColors: Record<AppNotification['kind'], string> = {
+  booking: 'bg-blue-50 text-blue-600',
+  payment: 'bg-emerald-50 text-emerald-600',
+  review: 'bg-amber-50 text-amber-600',
+  signup: 'bg-purple-50 text-purple-600',
+  accepted: 'bg-green-50 text-green-600',
+  rejected: 'bg-red-50 text-red-600',
+  completed: 'bg-indigo-50 text-indigo-600',
 };
 
 interface NotificationBellProps {
-  notifications: AdminNotification[];
+  notifications: AppNotification[];
   unreadCount: number;
   open: boolean;
   onToggle: () => void;
@@ -53,7 +66,7 @@ export function NotificationBell({ notifications, unreadCount, open, onToggle, o
           </div>
           {notifications.length === 0 ? (
             <p className="px-4 py-6 text-sm text-gray-400 text-center">
-              Nothing yet — new bookings and signups will show up here.
+              Nothing yet — new activity on your account will show up here.
             </p>
           ) : (
             notifications.map(n => (
@@ -62,12 +75,7 @@ export function NotificationBell({ notifications, unreadCount, open, onToggle, o
                 onClick={() => onNavigate(n.link)}
                 className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
               >
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                  n.kind === 'booking' ? 'bg-blue-50 text-blue-600' :
-                  n.kind === 'payment' ? 'bg-emerald-50 text-emerald-600' :
-                  n.kind === 'review' ? 'bg-amber-50 text-amber-600' :
-                  'bg-purple-50 text-purple-600'
-                }`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${notificationColors[n.kind]}`}>
                   {notificationIcons[n.kind]}
                 </div>
                 <div className="min-w-0">

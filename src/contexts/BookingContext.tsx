@@ -3,6 +3,7 @@ import { collection, doc, onSnapshot, setDoc, updateDoc } from 'firebase/firesto
 import { db } from '../lib/firebase';
 import { Booking, mockBookings } from '../lib/mockData';
 import { useAuth } from './AuthContext';
+import { useInvoices } from './InvoiceContext';
 
 interface BookingContextType {
   bookings: Booking[];
@@ -10,7 +11,7 @@ interface BookingContextType {
   error: string | null;
   addBooking: (booking: Omit<Booking, 'id' | 'createdAt'>) => Promise<void>;
   updateBookingStatus: (id: string, status: Booking['status']) => Promise<void>;
-  markBookingPaid: (id: string) => Promise<void>;
+  markBookingPaid: (id: string) => Promise<string>;
   getBookingsForParent: (parentId: string, parentEmail?: string) => Booking[];
   getBookingsForCoach: (coachId: string) => Booking[];
 }
@@ -93,11 +94,28 @@ export function BookingProvider({ children }: { children: ReactNode }) {
   };
 
   const updateBookingStatus = async (id: string, status: Booking['status']) => {
-    await updateDoc(doc(db, COLLECTION, id), { status });
+    await updateDoc(doc(db, COLLECTION, id), { status, statusUpdatedAt: new Date().toISOString() });
   };
 
-  const markBookingPaid = async (id: string) => {
+  const { createInvoice } = useInvoices();
+
+  const markBookingPaid = async (id: string): Promise<string> => {
+    const booking = bookings.find((b) => b.id === id);
     await updateDoc(doc(db, COLLECTION, id), { paid: true, paidAt: new Date().toISOString() });
+
+    // Every confirmed payment gets a real, sequentially-numbered invoice —
+    // this isn't a separate optional step, it's part of what "mark as
+    // paid" actually means for the business.
+    if (booking) {
+      const invoice = await createInvoice({
+        bookingId: booking.id,
+        parentId: booking.parentId,
+        coachId: booking.coachId,
+      });
+      await updateDoc(doc(db, COLLECTION, id), { invoiceNumber: invoice.invoiceNumber });
+      return invoice.invoiceNumber;
+    }
+    return '';
   };
 
   const getBookingsForParent = (parentId: string, parentEmail?: string) =>

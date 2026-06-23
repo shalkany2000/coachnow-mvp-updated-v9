@@ -1,23 +1,20 @@
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, User, BookOpen, TrendingUp, DollarSign, ChevronRight, Activity } from 'lucide-react';
+import { Users, User, BookOpen, TrendingUp, DollarSign, ChevronRight, Activity } from 'lucide-react';
 import { useBookings } from '../../contexts/BookingContext';
 import { useCoaches } from '../../contexts/CoachContext';
+import { useSettings } from '../../contexts/SettingsContext';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { mockUsers } from '../../lib/mockData';
-
-const sidebarItems = [
-  { label: 'Overview', path: '/admin', icon: <LayoutDashboard className="w-full h-full" /> },
-  { label: 'Users', path: '/admin/users', icon: <Users className="w-full h-full" /> },
-  { label: 'Coaches', path: '/admin/coaches', icon: <User className="w-full h-full" /> },
-  { label: 'Bookings', path: '/admin/bookings', icon: <BookOpen className="w-full h-full" /> },
-];
+import { useAdminSidebarItems } from '../../hooks/useAdminSidebarItems';
 
 export function AdminDashboard() {
   const navigate = useNavigate();
+  const { items: sidebarItems, title: sidebarTitle } = useAdminSidebarItems();
   const { bookings } = useBookings();
   const { coaches } = useCoaches();
+  const { settings } = useSettings();
 
   const totalRevenue = bookings.filter(b => b.status === 'completed').reduce((s, b) => s + b.price, 0);
   const totalCommission = bookings.filter(b => b.status === 'completed').reduce((s, b) => s + b.commission, 0);
@@ -34,12 +31,12 @@ export function AdminDashboard() {
   };
 
   return (
-    <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Admin Panel">
+    <DashboardLayout sidebarItems={sidebarItems} sidebarTitle={sidebarTitle}>
       <div className="space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-black text-gray-900">Admin Overview</h1>
+            <h1 className="text-2xl font-black text-gray-900">{sidebarTitle === 'GM Panel' ? 'GM Overview' : 'Admin Overview'}</h1>
             <p className="text-gray-500 mt-1">Platform performance at a glance</p>
           </div>
           <div className="flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1.5 rounded-full text-sm font-medium">
@@ -54,7 +51,7 @@ export function AdminDashboard() {
             { label: 'Total Users', value: mockUsers.length + coaches.length, icon: <Users className="w-5 h-5" />, color: 'blue', sub: 'registered accounts' },
             { label: 'Total Coaches', value: coaches.length, icon: <User className="w-5 h-5" />, color: 'purple', sub: `${coaches.filter(c => c.verified).length} verified` },
             { label: 'Total Bookings', value: bookings.length, icon: <BookOpen className="w-5 h-5" />, color: 'green', sub: `${pendingBookings} pending` },
-            { label: 'Commission Earned', value: `AED ${totalCommission}`, icon: <DollarSign className="w-5 h-5" />, color: 'yellow', sub: '15% per booking' },
+            { label: 'Commission Earned', value: `AED ${totalCommission}`, icon: <DollarSign className="w-5 h-5" />, color: 'yellow', sub: `${Math.round(settings.commissionRate * 100)}% per booking` },
           ].map(stat => (
             <Card key={stat.label} padding="sm">
               <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl mb-3 

@@ -7,6 +7,7 @@ import { useCoaches } from '../contexts/CoachContext';
 import { buildAdminWhatsAppLink, ADMIN_WHATSAPP_NUMBER } from '../lib/config';
 import { CoachCard } from '../components/coaches/CoachCard';
 import { Navbar } from '../components/layout/Navbar';
+import { AnnouncementBanner } from '../components/AnnouncementBanner';
 
 const SPORT_ICONS: Record<string, string> = {
   Swimming: '🏊',
@@ -57,6 +58,7 @@ export function LandingPage() {
 
   return (
     <div className="min-h-screen bg-white font-sans">
+      <AnnouncementBanner />
       <Navbar />
 
       {/* Hero */}
@@ -84,7 +86,7 @@ export function LandingPage() {
             in Dubai
           </h1>
           <p className="text-lg sm:text-xl text-blue-100 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Connect with expert coaches for swimming, fitness, kids training and more.
+            Connect with expert coaches for swimming, fitness, tennis, padel and badminton.
             Book sessions online in minutes.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

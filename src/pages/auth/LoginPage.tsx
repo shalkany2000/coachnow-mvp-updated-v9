@@ -1,33 +1,28 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, Dumbbell, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Mail, Lock, Dumbbell, Eye, EyeOff } from 'lucide-react';
 import { useAuth, friendlyAuthError } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 
-const DEMO_ACCOUNTS = [
-  { label: '👨‍👩‍👧 Parent Demo', email: 'parent@demo.com', password: 'demo123' },
-  { label: '🏊 Coach Demo', email: 'ahmed@coach.com', password: 'demo123' },
-  { label: '⚙️ Admin Demo', email: 'admin@coachnow.ae', password: 'demo123' },
-];
-
 export function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, resetPassword } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) { setError('Please fill in all fields.'); return; }
-    setLoading(true); setError('');
+    setLoading(true); setError(''); setNotice('');
     try {
       const user = await login(email, password);
-      if (user.role === 'admin') navigate('/admin');
+      if (user.role === 'admin' || user.role === 'gm') navigate('/admin');
       else if (user.role === 'coach') navigate('/coach/dashboard');
       else navigate('/parent/home');
     } catch (err) {
@@ -38,22 +33,23 @@ export function LoginPage() {
     }
   };
 
-  const handleDemoLogin = async (demoEmail: string, demoPass: string) => {
-    setEmail(demoEmail); setPassword(demoPass);
-    setLoading(true); setError('');
+  const handleForgotPassword = async () => {
+    setError('');
+    if (!email) {
+      setNotice('Enter your email address above first, then click "Forgot password?" again.');
+      return;
+    }
+    setResetting(true);
     try {
-      const user = await login(demoEmail, demoPass);
-      if (user.role === 'admin') navigate('/admin');
-      else if (user.role === 'coach') navigate('/coach/dashboard');
-      else navigate('/parent/home');
+      await resetPassword(email);
     } catch (err) {
-      console.error('Demo login failed:', err);
-      setError(
-        "Demo login failed — this demo account may not be set up in Firebase yet. " +
-        friendlyAuthError(err)
-      );
+      // Deliberately show the same message whether or not the account
+      // exists — confirming "this email isn't registered" to anyone who
+      // asks is a real information leak, not just a UX nicety.
+      console.warn('Password reset request:', err);
     } finally {
-      setLoading(false);
+      setResetting(false);
+      setNotice(`If an account exists for ${email}, we've sent a password reset link to it.`);
     }
   };
 
@@ -70,23 +66,6 @@ export function LoginPage() {
           </Link>
           <h1 className="text-2xl font-black text-gray-900">Welcome back</h1>
           <p className="text-gray-500 mt-1">Sign in to your account</p>
-        </div>
-
-        {/* Demo Accounts */}
-        <div className="bg-blue-50 rounded-2xl p-4 mb-6 border border-blue-100">
-          <p className="text-xs font-semibold text-blue-700 mb-3 uppercase tracking-wide">🚀 Quick Demo Access</p>
-          <div className="flex flex-col gap-2">
-            {DEMO_ACCOUNTS.map(acc => (
-              <button
-                key={acc.email}
-                onClick={() => handleDemoLogin(acc.email, acc.password)}
-                className="flex items-center justify-between w-full text-left px-3 py-2 bg-white hover:bg-blue-50 rounded-xl text-sm font-medium text-gray-700 transition-colors border border-blue-100 group"
-              >
-                <span>{acc.label}</span>
-                <ArrowRight className="w-4 h-4 text-blue-400 group-hover:text-blue-600 transition-colors" />
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Form */}
@@ -115,10 +94,11 @@ export function LoginPage() {
                 <label className="text-sm font-medium text-gray-700">Password</label>
                 <button
                   type="button"
-                  onClick={() => setNotice("Password reset isn't available in this demo — try one of the demo accounts above instead.")}
-                  className="text-xs text-blue-600 hover:underline"
+                  onClick={handleForgotPassword}
+                  disabled={resetting}
+                  className="text-xs text-blue-600 hover:underline disabled:opacity-50"
                 >
-                  Forgot password?
+                  {resetting ? 'Sending...' : 'Forgot password?'}
                 </button>
               </div>
               <div className="relative">

@@ -16,6 +16,14 @@ service cloud.firestore {
       return myRole() == 'admin';
     }
 
+    // GM has the same day-to-day operational access as admin (managing
+    // bookings, verifying coaches, viewing everything) but NOT platform-
+    // level settings like the commission rate — see /settings below, which
+    // deliberately checks isAdmin() instead of isStaff().
+    function isStaff() {
+      return myRole() == 'admin' || myRole() == 'gm';
+    }
+
     // The app matches "is this signed-in person the owner of this coach
     // profile" by userId OR by email (see CoachContext / CoachDashboard
     // etc.) — necessary because coach profiles seeded before this account
@@ -88,7 +96,7 @@ service cloud.firestore {
       // clauses.
       allow update: if
         (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating', 'reviewCount'])) ||
-        isAdmin() || ownsCoach(resource.data);
+        isStaff() || ownsCoach(resource.data);
       allow delete: if false;
     }
 
@@ -98,9 +106,47 @@ service cloud.firestore {
         (isSignedIn() && request.resource.data.parentId == request.auth.uid);
       allow update: if isSignedIn() && (
         resource.data.parentId == request.auth.uid ||
-        isAdmin() ||
+        isStaff() ||
         ownsCoachById(resource.data.coachId)
       );
+      allow delete: if false;
+    }
+
+    match /settings/{settingId} {
+      // Read is public — the commission rate is shown in places like the
+      // coach profile setup page and earnings breakdowns. Writing it is
+      // intentionally admin-only (NOT isStaff()) — this is the actual
+      // "sensitive setting" GM doesn't get access to.
+      allow read: if true;
+      // Auto-seeded once with fixed default values the first time the app
+      // loads against an empty settings collection — same pattern as the
+      // coach/booking starter catalog.
+      allow create: if true;
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
+    // The invoice number counter lives at settings/invoiceCounter — a more
+    // specific match than the generic /settings/{settingId} block above.
+    // Firestore grants access if ANY matching rule allows it, so this adds
+    // staff write access to JUST this one document without loosening the
+    // admin-only platform settings rule above.
+    match /settings/invoiceCounter {
+      allow write: if isStaff();
+    }
+
+    match /invoices/{invoiceId} {
+      // A minimal numbering ledger (see InvoiceContext) — the actual PDF
+      // content is generated fresh from the linked booking each time, not
+      // stored here. Visible to staff, the parent who paid, and the coach
+      // whose session it was for.
+      allow read: if isSignedIn() && (
+        isStaff() ||
+        resource.data.parentId == request.auth.uid ||
+        ownsCoachById(resource.data.coachId)
+      );
+      allow create: if isStaff();
+      allow update: if false;
       allow delete: if false;
     }
 

@@ -3,7 +3,7 @@ export interface User {
   name: string;
   email: string;
   phone: string;
-  role: 'parent' | 'coach' | 'admin';
+  role: 'parent' | 'coach' | 'admin' | 'gm';
   createdAt: string;
   avatar?: string;
 }
@@ -30,6 +30,18 @@ export interface Coach {
   onLeave?: boolean;
 }
 
+// Minimal numbering ledger — the actual invoice PDF content is always
+// generated fresh from the linked booking's fields, not duplicated here.
+// This just exists so invoice numbers are sequential and auditable.
+export interface Invoice {
+  id: string;
+  invoiceNumber: string; // e.g. "INV-0001"
+  bookingId: string;
+  parentId: string;
+  coachId: string;
+  createdAt: string;
+}
+
 export interface Review {
   id: string; // same as bookingId — one review per completed booking
   coachId: string;
@@ -54,6 +66,11 @@ export interface Booking {
   time: string;
   duration: number; // minutes, snapshotted at time of booking
   status: 'pending' | 'accepted' | 'rejected' | 'completed';
+  statusUpdatedAt?: string;
+  invoiceNumber?: string;
+  originalPrice?: number; // present only when a discount was applied; price is the final amount charged
+  discountAmount?: number;
+  discountReason?: string;
   paid: boolean;
   paidAt?: string;
   price: number;
@@ -96,8 +113,8 @@ export const mockCoaches: Coach[] = [
     sportType: 'Swimming',
     pricePerHour: 250,
     location: 'Dubai Marina',
-    rating: 4.9,
-    reviewCount: 127,
+    rating: 0,
+    reviewCount: 0,
     bio: 'Former national swimming champion with 10+ years of coaching experience. Specializing in all age groups from beginners to competitive swimmers. I create personalized training plans that focus on technique, endurance, and confidence in water.',
     avatar: 'https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&dpr=1&fit=crop&h=200&w=200',
     experience: '10 years',
@@ -116,8 +133,8 @@ export const mockCoaches: Coach[] = [
     sportType: 'Fitness',
     pricePerHour: 200,
     location: 'JBR',
-    rating: 4.8,
-    reviewCount: 89,
+    rating: 0,
+    reviewCount: 0,
     bio: 'Certified personal trainer and nutrition coach. Specializing in women\'s fitness, weight management, and post-natal recovery. My sessions are energetic, fun and results-driven. Clients see visible changes within 4 weeks.',
     avatar: 'https://images.pexels.com/photos/1065084/pexels-photo-1065084.jpeg?auto=compress&cs=tinysrgb&dpr=1&fit=crop&h=200&w=200',
     experience: '7 years',
@@ -136,8 +153,8 @@ export const mockCoaches: Coach[] = [
     sportType: 'Padel',
     pricePerHour: 180,
     location: 'Jumeirah',
-    rating: 4.9,
-    reviewCount: 203,
+    rating: 0,
+    reviewCount: 0,
     bio: 'Padel-obsessed coach who fell in love with the sport in Spain before bringing it to Dubai. I work with complete beginners learning the basics of the glass court, right through to players sharpening their doubles strategy and wall play.',
     avatar: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&dpr=1&fit=crop&h=200&w=200',
     experience: '12 years',
@@ -156,8 +173,8 @@ export const mockCoaches: Coach[] = [
     sportType: 'Badminton',
     pricePerHour: 150,
     location: 'Palm Jumeirah',
-    rating: 4.7,
-    reviewCount: 64,
+    rating: 0,
+    reviewCount: 0,
     bio: 'Former state-level badminton player from India with 8 years of coaching experience. I focus on footwork, racket control, and smart shot selection — equally comfortable starting a total beginner or sharpening a competitive player\'s game.',
     avatar: 'https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg?auto=compress&cs=tinysrgb&dpr=1&fit=crop&h=200&w=200',
     experience: '8 years',
@@ -176,8 +193,8 @@ export const mockCoaches: Coach[] = [
     sportType: 'Padel',
     pricePerHour: 220,
     location: 'Arabian Ranches',
-    rating: 4.8,
-    reviewCount: 156,
+    rating: 0,
+    reviewCount: 0,
     bio: 'Ex-professional footballer turned full-time padel coach after the sport took over Dubai. I bring a strong tactical eye to the court — positioning, shot selection, and doubles teamwork — for everyone from first-timers to club-level players.',
     avatar: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&dpr=1&fit=crop&h=200&w=200',
     experience: '9 years',
@@ -196,8 +213,8 @@ export const mockCoaches: Coach[] = [
     sportType: 'Tennis',
     pricePerHour: 300,
     location: 'Downtown Dubai',
-    rating: 4.6,
-    reviewCount: 42,
+    rating: 0,
+    reviewCount: 0,
     bio: 'ITF-certified tennis coach with experience coaching players of all ages. Whether you\'re picking up a racket for the first time or looking to compete, I\'ll help you develop proper technique and game strategy.',
     avatar: 'https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&dpr=1&fit=crop&h=200&w=200',
     experience: '6 years',
@@ -216,8 +233,8 @@ export const mockCoaches: Coach[] = [
     sportType: 'Badminton',
     pricePerHour: 190,
     location: 'Business Bay',
-    rating: 4.9,
-    reviewCount: 98,
+    rating: 0,
+    reviewCount: 0,
     bio: 'Competitive badminton player turned coach, focused on building a solid foundation — grip, footwork, and smash technique — before moving on to match strategy. I teach both children and adults in a structured, encouraging environment.',
     avatar: 'https://images.pexels.com/photos/1300402/pexels-photo-1300402.jpeg?auto=compress&cs=tinysrgb&dpr=1&fit=crop&h=200&w=200',
     experience: '15 years',
@@ -236,8 +253,8 @@ export const mockCoaches: Coach[] = [
     sportType: 'Swimming',
     pricePerHour: 280,
     location: 'DIFC',
-    rating: 4.7,
-    reviewCount: 71,
+    rating: 0,
+    reviewCount: 0,
     bio: 'Olympic-level swimming background. I specialize in competitive swimming preparation and open water training. My unique approach combines strength, technique, and mental conditioning for peak performance.',
     avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&dpr=1&fit=crop&h=200&w=200',
     experience: '11 years',
