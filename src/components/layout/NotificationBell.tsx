@@ -75,6 +75,7 @@ export function NotificationBell({ notifications, unreadCount, open, onToggle, o
                 key={n.id}
                 type="button"
                 onClick={(e) => {
+                  console.log('[CoachNow] Notification button onClick fired:', n.link);
                   e.preventDefault();
                   e.stopPropagation();
                   onNavigate(n.link);
