@@ -6,6 +6,23 @@ export interface User {
   role: 'parent' | 'coach' | 'admin' | 'gm';
   createdAt: string;
   avatar?: string;
+  referralCode?: string;
+  referredBy?: string; // userId of whoever referred this person, if any
+  pendingReferralDiscountPercent?: number; // unlocked reward, applied + cleared on their next booking
+}
+
+// Tracks a single referral relationship from signup through reward —
+// separate from the User fields above so there's a clean audit trail of
+// who referred whom and when the reward actually unlocked.
+export interface Referral {
+  id: string;
+  referrerId: string;
+  referrerName: string;
+  referredUserId: string;
+  referredName: string;
+  status: 'pending' | 'rewarded';
+  createdAt: string;
+  rewardedAt?: string;
 }
 
 export interface Coach {
@@ -71,6 +88,8 @@ export interface Booking {
   originalPrice?: number; // present only when a discount was applied; price is the final amount charged
   discountAmount?: number;
   discountReason?: string;
+  serviceFee?: number;
+  vatAmount?: number;
   paid: boolean;
   paidAt?: string;
   price: number;

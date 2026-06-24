@@ -8,6 +8,8 @@ export interface PlatformSettings {
   firstBookingDiscountPercent: number; // e.g. 50 means 50% off
   announcementEnabled: boolean;
   announcementMessage: string;
+  referralProgramEnabled: boolean;
+  referralDiscountPercent: number; // % off the referrer's next booking, once unlocked
 }
 
 const DEFAULT_SETTINGS: PlatformSettings = {
@@ -16,6 +18,8 @@ const DEFAULT_SETTINGS: PlatformSettings = {
   firstBookingDiscountPercent: 50,
   announcementEnabled: true,
   announcementMessage: '🎉 New here? Get 50% off your first booking — automatically applied at checkout.',
+  referralProgramEnabled: true,
+  referralDiscountPercent: 20,
 };
 const DOC_PATH = ['settings', 'platform'] as const;
 

@@ -4,6 +4,8 @@ import { db } from '../lib/firebase';
 import { Booking, mockBookings } from '../lib/mockData';
 import { useAuth } from './AuthContext';
 import { useInvoices } from './InvoiceContext';
+import { useSettings } from './SettingsContext';
+import { processReferralReward } from '../lib/referralActions';
 
 interface BookingContextType {
   bookings: Booking[];
@@ -98,6 +100,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
   };
 
   const { createInvoice } = useInvoices();
+  const { settings } = useSettings();
 
   const markBookingPaid = async (id: string): Promise<string> => {
     const booking = bookings.find((b) => b.id === id);
@@ -113,6 +116,14 @@ export function BookingProvider({ children }: { children: ReactNode }) {
         coachId: booking.coachId,
       });
       await updateDoc(doc(db, COLLECTION, id), { invoiceNumber: invoice.invoiceNumber });
+
+      // If this is the qualifying first paid booking for a referred
+      // customer, this unlocks their referrer's reward. Best-effort —
+      // never undoes the payment confirmation itself if it fails.
+      if (settings.referralProgramEnabled) {
+        processReferralReward(booking.parentId, settings.referralDiscountPercent);
+      }
+
       return invoice.invoiceNumber;
     }
     return '';

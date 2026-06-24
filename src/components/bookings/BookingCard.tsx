@@ -55,6 +55,11 @@ export function BookingCard({ booking, role, onAccept, onReject, onComplete, onM
         <div className="text-right">
           <p className="text-xl font-bold text-gray-900">AED {booking.price}</p>
           <p className="text-xs text-gray-500">Session fee</p>
+          {(booking.serviceFee || booking.vatAmount) && (
+            <p className="text-xs text-gray-400 mt-0.5">
+              Total paid: AED {booking.price + (booking.serviceFee || 0) + (booking.vatAmount || 0)}
+            </p>
+          )}
         </div>
       </div>
 

@@ -1,4 +1,4 @@
-import { X, CheckCircle2 } from 'lucide-react';
+import { X, CheckCircle2, Dumbbell } from 'lucide-react';
 import { Booking } from '../lib/mockData';
 import { formatTime } from '../utils/time';
 
@@ -11,91 +11,123 @@ export function ReceiptModal({ booking, onClose }: ReceiptModalProps) {
   const sessionDate = new Date(booking.date + 'T00:00:00').toLocaleDateString('en-AE', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
+  const serviceFee = booking.serviceFee || 0;
+  const vatAmount = booking.vatAmount || 0;
+  const totalPaid = booking.price + serviceFee + vatAmount;
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[200]"
+      className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[200]"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl max-w-sm w-full p-6 relative max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-2xl max-w-sm w-full relative max-h-[90vh] overflow-y-auto shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          onClick={onClose}
-          aria-label="Close receipt"
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        {/* Header */}
-        <div className="text-center pt-2 pb-4">
-          <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
-            <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+        {/* Branded header */}
+        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-t-2xl px-6 pt-6 pb-6 text-center relative">
+          <button
+            onClick={onClose}
+            aria-label="Close receipt"
+            className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center mx-auto mb-2">
+            <Dumbbell className="w-5 h-5 text-white" />
           </div>
-          <h3 className="font-bold text-lg text-gray-900">Payment Receipt</h3>
-          <p className="text-xs text-gray-400 mt-0.5">CoachNow · Dubai, UAE</p>
+          <p className="font-bold text-white text-lg">CoachNow</p>
+          <p className="text-blue-100 text-xs mt-0.5">Dubai, United Arab Emirates</p>
+          <div className="inline-flex items-center gap-1.5 bg-white/15 rounded-full px-3 py-1 mt-3">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
+            <span className="text-xs font-bold text-white tracking-wide">PAID</span>
+          </div>
         </div>
 
-        <div className="border-t-2 border-dashed border-gray-200 my-2" />
+        <div className="px-6 pb-6 pt-5">
+          <h3 className="font-bold text-center text-gray-900 text-base mb-4">Payment Receipt</h3>
 
-        {/* Meta */}
-        <div className="py-3 space-y-1.5">
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Receipt No.</span>
-            <span className="font-semibold text-gray-900">{booking.invoiceNumber}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Status</span>
-            <span className="font-bold text-emerald-600">PAID</span>
-          </div>
-          {booking.paidAt && (
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Paid on</span>
-              <span className="text-gray-700">
-                {new Date(booking.paidAt).toLocaleDateString('en-AE', { day: 'numeric', month: 'short', year: 'numeric' })}
-              </span>
+          {/* Meta */}
+          <div className="space-y-1.5 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-500">Receipt No.</span>
+              <span className="font-semibold text-gray-900">{booking.invoiceNumber}</span>
             </div>
-          )}
-        </div>
-
-        <div className="border-t-2 border-dashed border-gray-200 my-2" />
-
-        {/* Session details */}
-        <div className="py-3">
-          <p className="text-xs font-semibold text-gray-400 mb-1.5">SESSION</p>
-          <p className="font-semibold text-gray-900">{booking.sportType} with {booking.coachName}</p>
-          <p className="text-sm text-gray-500 mt-1">{sessionDate}</p>
-          <p className="text-sm text-gray-500">{formatTime(booking.time)} · {booking.duration} min · {booking.location}</p>
-          <p className="text-sm text-gray-500 mt-1">Billed to: {booking.parentName}</p>
-        </div>
-
-        <div className="border-t-2 border-dashed border-gray-200 my-2" />
-
-        {/* Totals */}
-        <div className="py-3 space-y-1.5">
-          {booking.discountAmount ? (
-            <>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Subtotal</span>
-                <span className="text-gray-400 line-through">AED {booking.originalPrice}</span>
+            {booking.paidAt && (
+              <div className="flex justify-between">
+                <span className="text-gray-500">Paid on</span>
+                <span className="text-gray-700">
+                  {new Date(booking.paidAt).toLocaleDateString('en-AE', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-emerald-600">{booking.discountReason || 'Discount'}</span>
-                <span className="font-medium text-emerald-600">- AED {booking.discountAmount}</span>
-              </div>
-            </>
-          ) : null}
-          <div className="flex justify-between text-lg font-bold pt-1">
-            <span className="text-gray-900">Total Paid</span>
-            <span className="text-blue-600">AED {booking.price}</span>
+            )}
+            <div className="flex justify-between">
+              <span className="text-gray-500">Billed to</span>
+              <span className="text-gray-700">{booking.parentName}</span>
+            </div>
           </div>
-        </div>
 
-        <p className="text-xs text-gray-400 text-center mt-4">
-          Thank you for booking with CoachNow.
-        </p>
+          <div className="border-t-2 border-dashed border-gray-200 my-4" />
+
+          {/* Session details */}
+          <p className="text-xs font-bold text-gray-400 tracking-wide mb-2">SESSION DETAILS</p>
+          <div className="bg-gray-50 rounded-xl p-3.5">
+            <p className="font-semibold text-gray-900">{booking.sportType} with {booking.coachName}</p>
+            <p className="text-sm text-gray-500 mt-1">{sessionDate}</p>
+            <p className="text-sm text-gray-500">{formatTime(booking.time)} · {booking.duration} min</p>
+            <p className="text-sm text-gray-500">{booking.location}</p>
+          </div>
+
+          <div className="border-t-2 border-dashed border-gray-200 my-4" />
+
+          {/* Itemized totals */}
+          <p className="text-xs font-bold text-gray-400 tracking-wide mb-2">PAYMENT BREAKDOWN</p>
+          <div className="space-y-1.5 text-sm">
+            {booking.discountAmount ? (
+              <>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Subtotal</span>
+                  <span className="text-gray-400 line-through">AED {booking.originalPrice}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-emerald-600">{booking.discountReason || 'Discount'}</span>
+                  <span className="font-medium text-emerald-600">- AED {booking.discountAmount}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Session price</span>
+                  <span className="text-gray-700">AED {booking.price}</span>
+                </div>
+              </>
+            ) : (
+              <div className="flex justify-between">
+                <span className="text-gray-500">Session price</span>
+                <span className="text-gray-700">AED {booking.price}</span>
+              </div>
+            )}
+            {serviceFee > 0 && (
+              <div className="flex justify-between">
+                <span className="text-gray-500">Service fee</span>
+                <span className="text-gray-700">AED {serviceFee}</span>
+              </div>
+            )}
+            {vatAmount > 0 && (
+              <div className="flex justify-between">
+                <span className="text-gray-500">VAT (5%)</span>
+                <span className="text-gray-700">AED {vatAmount}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Grand total */}
+          <div className="bg-blue-50 rounded-xl px-4 py-3 mt-3 flex items-center justify-between">
+            <span className="font-bold text-gray-900">Total Paid</span>
+            <span className="font-black text-blue-600 text-lg">AED {totalPaid}</span>
+          </div>
+
+          <p className="text-xs text-gray-400 text-center mt-5">
+            Thank you for booking with CoachNow.
+          </p>
+        </div>
       </div>
     </div>
   );

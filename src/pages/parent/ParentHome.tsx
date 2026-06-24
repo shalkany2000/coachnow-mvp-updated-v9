@@ -9,6 +9,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { CoachCard } from '../../components/coaches/CoachCard';
+import { ReferralCard } from '../../components/ReferralCard';
 import {
   Users, Home, BookOpen, Dumbbell,
 } from 'lucide-react';
@@ -58,6 +59,8 @@ export function ParentHome() {
             </Button>
           </div>
         </div>
+
+        <ReferralCard />
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

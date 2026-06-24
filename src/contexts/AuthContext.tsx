@@ -10,11 +10,13 @@ import {
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { User, mockUsers } from '../lib/mockData';
+import { generateReferralCode } from '../lib/referral';
+import { findReferrerByCode, createReferralRecord } from '../lib/referralActions';
 
 interface AuthContextType {
   currentUser: User | null;
   login: (email: string, password: string) => Promise<User>;
-  register: (name: string, email: string, phone: string, password: string, role: 'parent' | 'coach') => Promise<User>;
+  register: (name: string, email: string, phone: string, password: string, role: 'parent' | 'coach', referralCodeInput?: string) => Promise<User>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   loading: boolean;
@@ -119,7 +121,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: string,
     phone: string,
     password: string,
-    role: 'parent' | 'coach'
+    role: 'parent' | 'coach',
+    referralCodeInput?: string
   ): Promise<User> => {
     const credential = await createUserWithEmailAndPassword(auth, email, password);
     const profile: User = {
@@ -129,9 +132,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       phone,
       role,
       createdAt: new Date().toISOString(),
+      referralCode: generateReferralCode(name),
     };
     await setDoc(doc(db, 'users', credential.user.uid), profile);
     setCurrentUser(profile);
+
+    // Linking a referral is best-effort and never blocks registration —
+    // a typo'd or expired code just means no referral gets recorded,
+    // not a failed signup.
+    if (referralCodeInput && referralCodeInput.trim()) {
+      try {
+        const referrer = await findReferrerByCode(referralCodeInput);
+        if (referrer && referrer.id !== profile.id) {
+          await setDoc(doc(db, 'users', profile.id), { referredBy: referrer.id }, { merge: true });
+          await createReferralRecord(referrer.id, referrer.name, profile.id, profile.name);
+        }
+      } catch (err) {
+        console.error('Failed to link referral:', err);
+      }
+    }
+
     // Note: the actual Coach catalog entry (sport, price, location, etc.) is
     // created when the coach completes /coach/profile-setup — see
     // CoachContext.addCoach, which links back via userId === newUser.id.

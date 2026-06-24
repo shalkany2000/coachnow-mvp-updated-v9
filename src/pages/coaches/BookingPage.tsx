@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 import { Calendar, Clock, MapPin, FileText, ArrowLeft, CheckCircle, ShieldCheck, MessageCircle } from 'lucide-react';
 import { useCoaches } from '../../contexts/CoachContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -10,7 +12,7 @@ import { Navbar } from '../../components/layout/Navbar';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { formatTime, generateSlots } from '../../utils/time';
-import { buildAdminWhatsAppLink } from '../../lib/config';
+import { buildAdminWhatsAppLink, VAT_RATE, SERVICE_FEE_AED } from '../../lib/config';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -70,22 +72,45 @@ export function BookingPage() {
   const isFirstBooking = currentUser
     ? getBookingsForParent(currentUser.id, currentUser.email).length === 0
     : false;
-  const discountApplies = settings.firstBookingDiscountEnabled && isFirstBooking;
+  const firstBookingDiscountApplies = settings.firstBookingDiscountEnabled && isFirstBooking;
+  const referralDiscountApplies = !!currentUser?.pendingReferralDiscountPercent;
 
   const originalPrice = coach.pricePerHour;
-  const discountAmount = discountApplies
+  const firstBookingDiscountAmount = firstBookingDiscountApplies
     ? Math.round(originalPrice * (settings.firstBookingDiscountPercent / 100))
     : 0;
+  const referralDiscountAmount = referralDiscountApplies
+    ? Math.round(originalPrice * ((currentUser?.pendingReferralDiscountPercent || 0) / 100))
+    : 0;
+
+  // If both are somehow available (e.g. someone shares their code before
+  // ever booking themselves), whichever discount is worth more wins —
+  // no stacking, simplest to reason about and always the better deal for
+  // the customer.
+  const usingReferralDiscount = referralDiscountAmount > firstBookingDiscountAmount;
+  const discountApplies = firstBookingDiscountApplies || referralDiscountApplies;
+  const discountAmount = usingReferralDiscount ? referralDiscountAmount : firstBookingDiscountAmount;
+  const discountLabel = usingReferralDiscount
+    ? `Referral reward (${currentUser?.pendingReferralDiscountPercent}%)`
+    : `First booking discount (${settings.firstBookingDiscountPercent}%)`;
   const finalPrice = originalPrice - discountAmount;
 
   const commission = Math.round(finalPrice * settings.commissionRate);
   const coachEarnings = finalPrice - commission;
 
+  // Service fee and VAT are customer-facing charges added on top of the
+  // session price — they go entirely to the platform (not split with the
+  // coach), same as how Uber/Airbnb service fees work. VAT is calculated
+  // on (session price + service fee), matching standard UAE VAT practice.
+  const serviceFee = SERVICE_FEE_AED;
+  const vatAmount = Math.round((finalPrice + serviceFee) * VAT_RATE);
+  const totalCharged = finalPrice + serviceFee + vatAmount;
+
   const timeSlots = generateSlots(coach.availabilityStart, coach.availabilityEnd, coach.sessionDuration);
   const selectedDayName = date ? DAY_NAMES[new Date(date + 'T00:00:00').getDay()] : null;
   const isDayAvailable = !selectedDayName || coach.availability.includes(selectedDayName);
 
-  const adminMessage = `Hi, I just booked a session on CoachNow and I'd like to pay.\n\nCoach: ${coach.name}\nSport: ${coach.sportType}\nDate: ${date}\nTime: ${time ? formatTime(time) : ''}\nDuration: ${coach.sessionDuration} min\n${discountApplies ? `Price: AED ${originalPrice} - ${settings.firstBookingDiscountPercent}% first-booking discount = AED ${finalPrice}` : `Price: AED ${finalPrice}`}`;
+  const adminMessage = `Hi, I just booked a session on CoachNow and I'd like to pay.\n\nCoach: ${coach.name}\nSport: ${coach.sportType}\nDate: ${date}\nTime: ${time ? formatTime(time) : ''}\nDuration: ${coach.sessionDuration} min\n${discountApplies ? `Session price: AED ${originalPrice} - ${discountLabel} = AED ${finalPrice}\n` : `Session price: AED ${finalPrice}\n`}Service fee: AED ${serviceFee}\nVAT (5%): AED ${vatAmount}\nTotal to pay: AED ${totalCharged}`;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,12 +138,21 @@ export function BookingPage() {
         coachEarnings,
         location: coach.location,
         notes,
+        serviceFee,
+        vatAmount,
         ...(discountApplies ? {
           originalPrice,
           discountAmount,
-          discountReason: 'First booking discount',
+          discountReason: discountLabel,
         } : {}),
       });
+
+      // The referral reward is one-time use — clear it now that it's been
+      // applied, so it can't be reused on a future booking.
+      if (usingReferralDiscount && currentUser) {
+        await updateDoc(doc(db, 'users', currentUser.id), { pendingReferralDiscountPercent: null });
+      }
+
       setSuccess(true);
     } catch (err) {
       console.error('Booking failed:', err);
@@ -168,14 +202,26 @@ export function BookingPage() {
                     <span className="text-gray-400 line-through">AED {originalPrice}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-emerald-600">First booking discount ({settings.firstBookingDiscountPercent}%)</span>
+                    <span className="text-emerald-600">{discountLabel}</span>
                     <span className="font-semibold text-emerald-600">- AED {discountAmount}</span>
                   </div>
                 </>
               )}
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Price</span>
-                <span className="font-bold text-blue-600">AED {finalPrice}</span>
+                <span className="text-gray-500">Session price</span>
+                <span className="font-semibold text-gray-800">AED {finalPrice}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Service fee</span>
+                <span className="font-semibold text-gray-800">AED {serviceFee}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">VAT (5%)</span>
+                <span className="font-semibold text-gray-800">AED {vatAmount}</span>
+              </div>
+              <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
+                <span className="text-gray-800 font-semibold">Total</span>
+                <span className="font-bold text-blue-600">AED {totalCharged}</span>
               </div>
             </div>
 
@@ -219,11 +265,15 @@ export function BookingPage() {
 
         {discountApplies && (
           <div className="bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl px-5 py-4 mb-6 flex items-center gap-3 shadow-sm">
-            <span className="text-2xl">🎉</span>
+            <span className="text-2xl">{usingReferralDiscount ? '🎁' : '🎉'}</span>
             <div>
-              <p className="text-white font-bold text-sm">Welcome to CoachNow!</p>
+              <p className="text-white font-bold text-sm">
+                {usingReferralDiscount ? 'Your referral reward is here!' : 'Welcome to CoachNow!'}
+              </p>
               <p className="text-emerald-50 text-xs mt-0.5">
-                This is your first booking — we've automatically applied a {settings.firstBookingDiscountPercent}% discount.
+                {usingReferralDiscount
+                  ? `Thanks for referring a friend — we've automatically applied your ${currentUser?.pendingReferralDiscountPercent}% reward.`
+                  : `This is your first booking — we've automatically applied a ${settings.firstBookingDiscountPercent}% discount.`}
               </p>
             </div>
           </div>
@@ -383,9 +433,9 @@ export function BookingPage() {
                 </div>
                 {discountApplies && (
                   <div className="bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 flex items-center gap-2">
-                    <span className="text-base">🎉</span>
+                    <span className="text-base">{usingReferralDiscount ? '🎁' : '🎉'}</span>
                     <span className="text-xs font-semibold text-emerald-700">
-                      First booking discount applied — {settings.firstBookingDiscountPercent}% off!
+                      {discountLabel} applied!
                     </span>
                   </div>
                 )}
@@ -402,9 +452,21 @@ export function BookingPage() {
                       </div>
                     </>
                   )}
-                  <div className="flex justify-between text-base font-bold">
+                  <div className="flex justify-between text-sm mb-1.5">
+                    <span className="text-gray-500">Session price</span>
+                    <span className="text-gray-700">AED {finalPrice}</span>
+                  </div>
+                  <div className="flex justify-between text-sm mb-1.5">
+                    <span className="text-gray-500">Service fee</span>
+                    <span className="text-gray-700">AED {serviceFee}</span>
+                  </div>
+                  <div className="flex justify-between text-sm mb-1.5">
+                    <span className="text-gray-500">VAT (5%)</span>
+                    <span className="text-gray-700">AED {vatAmount}</span>
+                  </div>
+                  <div className="flex justify-between text-base font-bold pt-2 border-t border-gray-100">
                     <span className="text-gray-800">Total</span>
-                    <span className="text-blue-600">AED {finalPrice}</span>
+                    <span className="text-blue-600">AED {totalCharged}</span>
                   </div>
                   <p className="text-xs text-gray-400 mt-1.5">
                     Pay securely online via the link our team sends on WhatsApp

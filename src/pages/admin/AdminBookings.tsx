@@ -125,7 +125,7 @@ export function AdminBookings() {
             </div>
             <a
               href={buildAdminWhatsAppLink(
-                `Hi ${paidConfirmation.booking.parentName}, your payment of AED ${paidConfirmation.booking.price} for your ${paidConfirmation.booking.sportType} session with ${paidConfirmation.booking.coachName} is confirmed ✅\n\nInvoice: ${paidConfirmation.invoiceNumber}. Thank you for booking with CoachNow!`
+                `Hi ${paidConfirmation.booking.parentName}, your payment of AED ${paidConfirmation.booking.price + (paidConfirmation.booking.serviceFee || 0) + (paidConfirmation.booking.vatAmount || 0)} for your ${paidConfirmation.booking.sportType} session with ${paidConfirmation.booking.coachName} is confirmed ✅\n\nInvoice: ${paidConfirmation.invoiceNumber}. Thank you for booking with CoachNow!`
               )}
               target="_blank"
               rel="noreferrer"

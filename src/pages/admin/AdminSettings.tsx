@@ -44,11 +44,20 @@ export function AdminSettings() {
   const [announceSaved, setAnnounceSaved] = useState(false);
   const [announceError, setAnnounceError] = useState('');
 
+  // Referral program
+  const [referralEnabled, setReferralEnabled] = useState(settings.referralProgramEnabled);
+  const [referralInput, setReferralInput] = useState(String(settings.referralDiscountPercent));
+  const [referralLoading, setReferralLoading] = useState(false);
+  const [referralSaved, setReferralSaved] = useState(false);
+  const [referralError, setReferralError] = useState('');
+
   useEffect(() => { setRateInput(String(Math.round(settings.commissionRate * 100))); }, [settings.commissionRate]);
   useEffect(() => { setDiscountEnabled(settings.firstBookingDiscountEnabled); }, [settings.firstBookingDiscountEnabled]);
   useEffect(() => { setDiscountInput(String(settings.firstBookingDiscountPercent)); }, [settings.firstBookingDiscountPercent]);
   useEffect(() => { setAnnounceEnabled(settings.announcementEnabled); }, [settings.announcementEnabled]);
   useEffect(() => { setAnnounceInput(settings.announcementMessage); }, [settings.announcementMessage]);
+  useEffect(() => { setReferralEnabled(settings.referralProgramEnabled); }, [settings.referralProgramEnabled]);
+  useEffect(() => { setReferralInput(String(settings.referralDiscountPercent)); }, [settings.referralDiscountPercent]);
 
   const handleSaveRate = async () => {
     setRateError(''); setRateSaved(false);
@@ -102,6 +111,26 @@ export function AdminSettings() {
       setAnnounceError("Couldn't save — check your connection and try again.");
     } finally {
       setAnnounceLoading(false);
+    }
+  };
+
+  const handleSaveReferral = async () => {
+    setReferralError(''); setReferralSaved(false);
+    const percent = parseFloat(referralInput);
+    if (isNaN(percent) || percent < 0 || percent > 100) {
+      setReferralError('Enter a reward percentage between 0 and 100.');
+      return;
+    }
+    setReferralLoading(true);
+    try {
+      await updateSettings({ referralProgramEnabled: referralEnabled, referralDiscountPercent: percent });
+      setReferralSaved(true);
+      setTimeout(() => setReferralSaved(false), 3000);
+    } catch (err) {
+      console.error('Failed to save referral settings:', err);
+      setReferralError("Couldn't save — check your connection and try again.");
+    } finally {
+      setReferralLoading(false);
     }
   };
 
@@ -250,6 +279,54 @@ export function AdminSettings() {
           )}
 
           <Button onClick={handleSaveAnnouncement} loading={announceLoading} className="mt-4">
+            Save Changes
+          </Button>
+        </Card>
+
+        {/* Referral program */}
+        <Card>
+          <div className="flex items-start justify-between gap-4 mb-1">
+            <div className="flex items-center gap-2">
+              <Gift className="w-5 h-5 text-pink-600" />
+              <h2 className="font-bold text-gray-900">Referral Program</h2>
+            </div>
+            <Toggle checked={referralEnabled} onChange={() => setReferralEnabled(!referralEnabled)} />
+          </div>
+          <p className="text-sm text-gray-500 mb-4">
+            When a customer refers a friend and that friend's first booking is paid for, the
+            referrer automatically earns this discount on their next session. Only unlocks once
+            real money changes hands — never just for signing up.
+          </p>
+
+          <label className="text-sm font-medium text-gray-700 block mb-1.5">Reward (%)</label>
+          <div className="flex items-center gap-3 max-w-xs">
+            <input
+              type="number"
+              min={0}
+              max={100}
+              step={5}
+              value={referralInput}
+              onChange={(e) => setReferralInput(e.target.value)}
+              disabled={!referralEnabled}
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all disabled:opacity-50"
+            />
+            <span className="text-gray-400 font-medium">%</span>
+          </div>
+
+          {referralError && (
+            <div className="flex items-center gap-2 text-sm text-red-600 font-medium mt-4">
+              <AlertCircle className="w-4 h-4" />
+              {referralError}
+            </div>
+          )}
+          {referralSaved && (
+            <div className="flex items-center gap-2 text-sm text-emerald-600 font-medium mt-4">
+              <CheckCircle className="w-4 h-4" />
+              Saved.
+            </div>
+          )}
+
+          <Button onClick={handleSaveReferral} loading={referralLoading} className="mt-4">
             Save Changes
           </Button>
         </Card>

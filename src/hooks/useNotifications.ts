@@ -4,14 +4,14 @@ import { useBookings } from '../contexts/BookingContext';
 import { useReviews } from '../contexts/ReviewContext';
 import { useCoaches } from '../contexts/CoachContext';
 import { useFirestoreCollection } from './useFirestoreCollection';
-import { mockUsers, User } from '../lib/mockData';
+import { mockUsers, User, Referral } from '../lib/mockData';
 
 export interface AppNotification {
   id: string;
   message: string;
   timestamp: string; // ISO
   link: string;
-  kind: 'booking' | 'payment' | 'signup' | 'review' | 'accepted' | 'rejected' | 'completed';
+  kind: 'booking' | 'payment' | 'signup' | 'review' | 'accepted' | 'rejected' | 'completed' | 'referral_reward';
 }
 
 // Builds a real notification feed from data that already exists, tailored
@@ -31,6 +31,7 @@ export function useNotifications() {
   const { reviews } = useReviews();
   const { coaches } = useCoaches();
   const { data: registeredUsers } = useFirestoreCollection<User>('users', isStaff);
+  const { data: myReferrals } = useFirestoreCollection<Referral>('referrals', role === 'parent');
 
   const seenKey = currentUser ? `coachnow_notifications_seen_at_${currentUser.id}` : '';
   const [seenAt, setSeenAt] = useState<string>('');
@@ -174,12 +175,24 @@ export function useNotifications() {
             });
           }
         });
+
+      myReferrals
+        .filter(r => r.referrerId === currentUser.id && r.status === 'rewarded' && r.rewardedAt)
+        .forEach(r => {
+          items.push({
+            id: `referral-${r.id}`,
+            message: `${r.referredName} completed their first booking — your referral reward is ready!`,
+            timestamp: r.rewardedAt!,
+            link: '/parent/home',
+            kind: 'referral_reward',
+          });
+        });
     }
 
     return items
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, 20);
-  }, [currentUser, role, isStaff, bookings, registeredUsers, reviews, coaches, myCoachProfile]);
+  }, [currentUser, role, isStaff, bookings, registeredUsers, reviews, coaches, myCoachProfile, myReferrals]);
 
   const unreadCount = notifications.filter(n => !seenAt || n.timestamp > seenAt).length;
 

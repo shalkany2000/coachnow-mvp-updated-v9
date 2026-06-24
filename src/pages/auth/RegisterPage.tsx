@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, Dumbbell, Eye, EyeOff, Users, Phone } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Mail, Lock, User, Dumbbell, Eye, EyeOff, Users, Phone, Gift } from 'lucide-react';
 import { useAuth, friendlyAuthError } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -8,10 +8,12 @@ import { Input } from '../../components/ui/Input';
 export function RegisterPage() {
   const navigate = useNavigate();
   const { register } = useAuth();
+  const [searchParams] = useSearchParams();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [referralCode, setReferralCode] = useState(searchParams.get('ref') || '');
   const [role, setRole] = useState<'parent' | 'coach'>('parent');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -24,7 +26,7 @@ export function RegisterPage() {
     if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
     setLoading(true); setError('');
     try {
-      await register(name, email, phone, password, role);
+      await register(name, email, phone, password, role, referralCode);
       if (role === 'coach') navigate('/coach/profile-setup');
       else navigate('/parent/home');
     } catch (err) {
@@ -115,6 +117,16 @@ export function RegisterPage() {
               onChange={e => setPhone(e.target.value)}
               icon={<Phone className="w-4 h-4" />}
             />
+            {role === 'parent' && (
+              <Input
+                label="Referral Code (optional)"
+                type="text"
+                placeholder="e.g. SARA42K"
+                value={referralCode}
+                onChange={e => setReferralCode(e.target.value.toUpperCase())}
+                icon={<Gift className="w-4 h-4" />}
+              />
+            )}
             <div>
               <label className="text-sm font-medium text-gray-700 block mb-1.5">Password</label>
               <div className="relative">

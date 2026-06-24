@@ -64,7 +64,27 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow create, update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow create, update: if isSignedIn() && (
+        request.auth.uid == userId ||
+        isAdmin() ||
+        // Staff can unlock a referral reward on someone else's account
+        // (set during markBookingPaid) without being able to touch any
+        // other field on that account, like their role.
+        (isStaff() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pendingReferralDiscountPercent']))
+      );
+      allow delete: if false;
+    }
+
+    match /referrals/{referralId} {
+      // Read is gated on being signed in (not public) — these records
+      // contain real people's names. The referred person creates their
+      // own referral record at signup (referredUserId must be themself,
+      // so nobody can fabricate a referral crediting an existing customer
+      // to someone else). Only staff can update it later, to mark the
+      // reward as unlocked once the referred person's first payment lands.
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.referredUserId == request.auth.uid;
+      allow update: if isStaff();
       allow delete: if false;
     }
 
