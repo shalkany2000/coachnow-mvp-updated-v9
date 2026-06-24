@@ -17,3 +17,13 @@ export const SERVICE_FEE_AED = 7;
 export function buildAdminWhatsAppLink(message: string): string {
   return `https://wa.me/${ADMIN_WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }
+
+// Builds a wa.me link to any phone number — used to let a parent notify
+// their coach directly, for example. Strips everything but digits and a
+// leading 0 (common in local-format numbers), since wa.me needs the
+// number with country code and no other formatting.
+export function buildWhatsAppLink(phone: string, message: string): string {
+  let digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('0')) digits = '971' + digits.slice(1); // assume UAE local format
+  return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
+}

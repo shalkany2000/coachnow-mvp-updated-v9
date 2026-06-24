@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Percent, CheckCircle, AlertCircle, Info, Gift, Megaphone } from 'lucide-react';
+import { Percent, CheckCircle, AlertCircle, Info, Gift, Megaphone, CalendarX } from 'lucide-react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useAdminSidebarItems } from '../../hooks/useAdminSidebarItems';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
@@ -51,6 +51,14 @@ export function AdminSettings() {
   const [referralSaved, setReferralSaved] = useState(false);
   const [referralError, setReferralError] = useState('');
 
+  // Cancellation policy
+  const [fullRefundHoursInput, setFullRefundHoursInput] = useState(String(settings.cancellationFullRefundHours));
+  const [partialRefundHoursInput, setPartialRefundHoursInput] = useState(String(settings.cancellationPartialRefundHours));
+  const [partialPenaltyInput, setPartialPenaltyInput] = useState(String(settings.cancellationPartialPenaltyPercent));
+  const [cancellationLoading, setCancellationLoading] = useState(false);
+  const [cancellationSaved, setCancellationSaved] = useState(false);
+  const [cancellationError, setCancellationError] = useState('');
+
   useEffect(() => { setRateInput(String(Math.round(settings.commissionRate * 100))); }, [settings.commissionRate]);
   useEffect(() => { setDiscountEnabled(settings.firstBookingDiscountEnabled); }, [settings.firstBookingDiscountEnabled]);
   useEffect(() => { setDiscountInput(String(settings.firstBookingDiscountPercent)); }, [settings.firstBookingDiscountPercent]);
@@ -58,6 +66,9 @@ export function AdminSettings() {
   useEffect(() => { setAnnounceInput(settings.announcementMessage); }, [settings.announcementMessage]);
   useEffect(() => { setReferralEnabled(settings.referralProgramEnabled); }, [settings.referralProgramEnabled]);
   useEffect(() => { setReferralInput(String(settings.referralDiscountPercent)); }, [settings.referralDiscountPercent]);
+  useEffect(() => { setFullRefundHoursInput(String(settings.cancellationFullRefundHours)); }, [settings.cancellationFullRefundHours]);
+  useEffect(() => { setPartialRefundHoursInput(String(settings.cancellationPartialRefundHours)); }, [settings.cancellationPartialRefundHours]);
+  useEffect(() => { setPartialPenaltyInput(String(settings.cancellationPartialPenaltyPercent)); }, [settings.cancellationPartialPenaltyPercent]);
 
   const handleSaveRate = async () => {
     setRateError(''); setRateSaved(false);
@@ -131,6 +142,40 @@ export function AdminSettings() {
       setReferralError("Couldn't save — check your connection and try again.");
     } finally {
       setReferralLoading(false);
+    }
+  };
+
+  const handleSaveCancellation = async () => {
+    setCancellationError(''); setCancellationSaved(false);
+    const fullHours = parseFloat(fullRefundHoursInput);
+    const partialHours = parseFloat(partialRefundHoursInput);
+    const penalty = parseFloat(partialPenaltyInput);
+    if (isNaN(fullHours) || isNaN(partialHours) || isNaN(penalty)) {
+      setCancellationError('Enter valid numbers for all three fields.');
+      return;
+    }
+    if (partialHours >= fullHours) {
+      setCancellationError('The partial-refund window must be fewer hours than the full-refund window.');
+      return;
+    }
+    if (penalty < 0 || penalty > 100) {
+      setCancellationError('Penalty must be between 0 and 100%.');
+      return;
+    }
+    setCancellationLoading(true);
+    try {
+      await updateSettings({
+        cancellationFullRefundHours: fullHours,
+        cancellationPartialRefundHours: partialHours,
+        cancellationPartialPenaltyPercent: penalty,
+      });
+      setCancellationSaved(true);
+      setTimeout(() => setCancellationSaved(false), 3000);
+    } catch (err) {
+      console.error('Failed to save cancellation policy:', err);
+      setCancellationError("Couldn't save — check your connection and try again.");
+    } finally {
+      setCancellationLoading(false);
     }
   };
 
@@ -327,6 +372,86 @@ export function AdminSettings() {
           )}
 
           <Button onClick={handleSaveReferral} loading={referralLoading} className="mt-4">
+            Save Changes
+          </Button>
+        </Card>
+
+        {/* Cancellation policy */}
+        <Card>
+          <div className="flex items-center gap-2 mb-1">
+            <CalendarX className="w-5 h-5 text-orange-600" />
+            <h2 className="font-bold text-gray-900">Cancellation Policy</h2>
+          </div>
+          <p className="text-sm text-gray-500 mb-4">
+            What a customer gets back as account credit when they cancel, based on how much notice
+            they give. Refunds are always issued as credit toward a future booking, never cash.
+          </p>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700 block mb-1.5">
+                Full refund window (hours before session)
+              </label>
+              <input
+                type="number" min={1} step={1}
+                value={fullRefundHoursInput}
+                onChange={(e) => setFullRefundHoursInput(e.target.value)}
+                className="w-full max-w-xs rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+              />
+              <p className="text-xs text-gray-400 mt-1">Cancelling at or before this many hours out: 100% back as credit. Also the only window rescheduling (no penalty) is offered.</p>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700 block mb-1.5">
+                Partial refund window (hours before session)
+              </label>
+              <input
+                type="number" min={0} step={1}
+                value={partialRefundHoursInput}
+                onChange={(e) => setPartialRefundHoursInput(e.target.value)}
+                className="w-full max-w-xs rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+              />
+              <p className="text-xs text-gray-400 mt-1">Between this and the full-refund window: partial credit, minus the penalty below.</p>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700 block mb-1.5">Penalty in the partial window (%)</label>
+              <div className="flex items-center gap-3 max-w-xs">
+                <input
+                  type="number" min={0} max={100} step={5}
+                  value={partialPenaltyInput}
+                  onChange={(e) => setPartialPenaltyInput(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                />
+                <span className="text-gray-400 font-medium">%</span>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">Cancelling inside the partial window forfeits this much; any closer than the partial window forfeits 100%.</p>
+            </div>
+          </div>
+
+          <div className="bg-blue-50 rounded-xl p-3 mt-4 flex items-start gap-2">
+            <Info className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-blue-700">
+              With these numbers: ≥{fullRefundHoursInput}h notice → full credit + free reschedule.
+              Between {partialRefundHoursInput}h–{fullRefundHoursInput}h → {100 - (parseFloat(partialPenaltyInput) || 0)}% credit.
+              Under {partialRefundHoursInput}h → no credit.
+            </p>
+          </div>
+
+          {cancellationError && (
+            <div className="flex items-center gap-2 text-sm text-red-600 font-medium mt-4">
+              <AlertCircle className="w-4 h-4" />
+              {cancellationError}
+            </div>
+          )}
+          {cancellationSaved && (
+            <div className="flex items-center gap-2 text-sm text-emerald-600 font-medium mt-4">
+              <CheckCircle className="w-4 h-4" />
+              Saved.
+            </div>
+          )}
+
+          <Button onClick={handleSaveCancellation} loading={cancellationLoading} className="mt-4">
             Save Changes
           </Button>
         </Card>

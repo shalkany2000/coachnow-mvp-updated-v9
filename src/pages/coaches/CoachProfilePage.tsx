@@ -5,6 +5,7 @@ import { useCoaches } from '../../contexts/CoachContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useReviews } from '../../contexts/ReviewContext';
 import { isSeedCoach, isSportLive } from '../../lib/sports';
+import { DAY_KEYS } from '../../lib/mockData';
 import { Navbar } from '../../components/layout/Navbar';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -160,28 +161,29 @@ export function CoachProfilePage() {
 
             {/* Availability */}
             <Card>
-              <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-                <h2 className="text-lg font-bold text-gray-900">Weekly Availability</h2>
-                <span className="text-sm font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-                  {formatTime(coach.availabilityStart)} – {formatTime(coach.availabilityEnd)}
-                </span>
-              </div>
+              <h2 className="text-lg font-bold text-gray-900 mb-4">Weekly Availability</h2>
               <div className="flex gap-2 flex-wrap">
-                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-                  <div
-                    key={day}
-                    className={`flex flex-col items-center px-4 py-3 rounded-xl border-2 transition-colors ${
-                      coach.availability.includes(day)
-                        ? 'border-blue-200 bg-blue-50 text-blue-700'
-                        : 'border-gray-100 bg-gray-50 text-gray-300'
-                    }`}
-                  >
-                    <span className="text-xs font-bold">{day}</span>
-                    {coach.availability.includes(day) && (
-                      <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1" />
-                    )}
-                  </div>
-                ))}
+                {DAY_KEYS.map(day => {
+                  const daySchedule = coach.weeklySchedule?.[day];
+                  const isWorking = !!daySchedule;
+                  return (
+                    <div
+                      key={day}
+                      className={`flex flex-col items-center px-3 py-2.5 rounded-xl border-2 transition-colors min-w-[64px] ${
+                        isWorking
+                          ? 'border-blue-200 bg-blue-50 text-blue-700'
+                          : 'border-gray-100 bg-gray-50 text-gray-300'
+                      }`}
+                    >
+                      <span className="text-xs font-bold">{day}</span>
+                      {isWorking && daySchedule && (
+                        <span className="text-[10px] font-medium text-blue-500 mt-1 whitespace-nowrap">
+                          {formatTime(daySchedule.start)}–{formatTime(daySchedule.end)}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </Card>
 

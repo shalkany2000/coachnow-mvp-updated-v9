@@ -28,6 +28,7 @@ export function AdminDashboard() {
     accepted: { label: 'Accepted', variant: 'green' as const },
     rejected: { label: 'Rejected', variant: 'red' as const },
     completed: { label: 'Completed', variant: 'blue' as const },
+    cancelled: { label: 'Cancelled', variant: 'gray' as const },
   };
 
   return (

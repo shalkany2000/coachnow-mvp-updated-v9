@@ -9,6 +9,7 @@ export interface User {
   referralCode?: string;
   referredBy?: string; // userId of whoever referred this person, if any
   pendingReferralDiscountPercent?: number; // unlocked reward, applied + cleared on their next booking
+  creditBalance?: number; // AED credit from cancellations, usable toward any future booking
 }
 
 // Tracks a single referral relationship from signup through reward —
@@ -25,11 +26,23 @@ export interface Referral {
   rewardedAt?: string;
 }
 
+// One coach's hours for a single day of the week. A day that's a rest day
+// is simply absent from weeklySchedule (or explicitly null) — not present
+// in the map at all.
+export interface DaySchedule {
+  start: string; // 'HH:mm'
+  end: string;   // 'HH:mm'
+}
+
+export const DAY_KEYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
+export type DayKey = typeof DAY_KEYS[number];
+
 export interface Coach {
   id: string;
   userId: string;
   name: string;
   email: string;
+  phone?: string;
   sportType: string;
   pricePerHour: number;
   location: string;
@@ -42,6 +55,11 @@ export interface Coach {
   availability: string[];
   availabilityStart: string;
   availabilityEnd: string;
+  // Per-day working hours — the real source of truth for which slots a
+  // customer can book on a given date. availability/availabilityStart/End
+  // above are kept in sync automatically for places that just want a
+  // quick "which days, roughly what hours" summary (e.g. coach cards).
+  weeklySchedule?: Partial<Record<DayKey, DaySchedule>>;
   sessionDuration: number; // minutes
   verified: boolean;
   onLeave?: boolean;
@@ -82,7 +100,7 @@ export interface Booking {
   date: string;
   time: string;
   duration: number; // minutes, snapshotted at time of booking
-  status: 'pending' | 'accepted' | 'rejected' | 'completed';
+  status: 'pending' | 'accepted' | 'rejected' | 'completed' | 'cancelled';
   statusUpdatedAt?: string;
   invoiceNumber?: string;
   originalPrice?: number; // present only when a discount was applied; price is the final amount charged
@@ -90,6 +108,12 @@ export interface Booking {
   discountReason?: string;
   serviceFee?: number;
   vatAmount?: number;
+  creditApplied?: number; // AED credit used toward this booking, if any
+  cancelledAt?: string;
+  refundCreditAmount?: number; // AED credited back to the parent's balance on cancellation
+  cancellationPenaltyPercent?: number; // % forfeited at the time of cancellation, for transparency
+  rescheduledAt?: string;
+  rescheduledFrom?: { date: string; time: string }; // the original slot, for an audit trail
   paid: boolean;
   paidAt?: string;
   price: number;
@@ -141,6 +165,13 @@ export const mockCoaches: Coach[] = [
     availability: ['Mon', 'Tue', 'Wed', 'Thu', 'Sat'],
     availabilityStart: '07:00',
     availabilityEnd: '15:00',
+    weeklySchedule: {
+      Mon: { start: '07:00', end: '15:00' },
+      Tue: { start: '07:00', end: '15:00' },
+      Wed: { start: '07:00', end: '15:00' },
+      Thu: { start: '07:00', end: '15:00' },
+      Sat: { start: '07:00', end: '15:00' },
+    },
     sessionDuration: 45,
     verified: true,
   },
@@ -161,6 +192,13 @@ export const mockCoaches: Coach[] = [
     availability: ['Mon', 'Wed', 'Fri', 'Sat', 'Sun'],
     availabilityStart: '06:00',
     availabilityEnd: '12:00',
+    weeklySchedule: {
+      Mon: { start: '06:00', end: '12:00' },
+      Wed: { start: '06:00', end: '12:00' },
+      Fri: { start: '06:00', end: '12:00' },
+      Sat: { start: '06:00', end: '12:00' },
+      Sun: { start: '06:00', end: '12:00' },
+    },
     sessionDuration: 60,
     verified: true,
   },
@@ -181,6 +219,12 @@ export const mockCoaches: Coach[] = [
     availability: ['Tue', 'Thu', 'Sat', 'Sun'],
     availabilityStart: '15:00',
     availabilityEnd: '19:00',
+    weeklySchedule: {
+      Tue: { start: '15:00', end: '19:00' },
+      Thu: { start: '15:00', end: '19:00' },
+      Sat: { start: '15:00', end: '19:00' },
+      Sun: { start: '15:00', end: '19:00' },
+    },
     sessionDuration: 60,
     verified: true,
   },
@@ -201,6 +245,13 @@ export const mockCoaches: Coach[] = [
     availability: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
     availabilityStart: '07:00',
     availabilityEnd: '11:00',
+    weeklySchedule: {
+      Mon: { start: '07:00', end: '11:00' },
+      Tue: { start: '07:00', end: '11:00' },
+      Wed: { start: '07:00', end: '11:00' },
+      Thu: { start: '07:00', end: '11:00' },
+      Fri: { start: '07:00', end: '11:00' },
+    },
     sessionDuration: 60,
     verified: true,
   },
@@ -221,6 +272,12 @@ export const mockCoaches: Coach[] = [
     availability: ['Mon', 'Wed', 'Fri', 'Sat'],
     availabilityStart: '16:00',
     availabilityEnd: '20:00',
+    weeklySchedule: {
+      Mon: { start: '16:00', end: '20:00' },
+      Wed: { start: '16:00', end: '20:00' },
+      Fri: { start: '16:00', end: '20:00' },
+      Sat: { start: '16:00', end: '20:00' },
+    },
     sessionDuration: 60,
     verified: true,
   },
@@ -241,6 +298,12 @@ export const mockCoaches: Coach[] = [
     availability: ['Tue', 'Thu', 'Sat', 'Sun'],
     availabilityStart: '09:00',
     availabilityEnd: '17:00',
+    weeklySchedule: {
+      Tue: { start: '09:00', end: '17:00' },
+      Thu: { start: '09:00', end: '17:00' },
+      Sat: { start: '09:00', end: '17:00' },
+      Sun: { start: '09:00', end: '17:00' },
+    },
     sessionDuration: 60,
     verified: false,
   },
@@ -261,6 +324,14 @@ export const mockCoaches: Coach[] = [
     availability: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
     availabilityStart: '17:00',
     availabilityEnd: '21:00',
+    weeklySchedule: {
+      Mon: { start: '17:00', end: '21:00' },
+      Tue: { start: '17:00', end: '21:00' },
+      Wed: { start: '17:00', end: '21:00' },
+      Thu: { start: '17:00', end: '21:00' },
+      Fri: { start: '17:00', end: '21:00' },
+      Sat: { start: '17:00', end: '21:00' },
+    },
     sessionDuration: 60,
     verified: true,
   },
@@ -281,6 +352,11 @@ export const mockCoaches: Coach[] = [
     availability: ['Mon', 'Wed', 'Fri'],
     availabilityStart: '06:00',
     availabilityEnd: '10:00',
+    weeklySchedule: {
+      Mon: { start: '06:00', end: '10:00' },
+      Wed: { start: '06:00', end: '10:00' },
+      Fri: { start: '06:00', end: '10:00' },
+    },
     sessionDuration: 45,
     verified: true,
   },

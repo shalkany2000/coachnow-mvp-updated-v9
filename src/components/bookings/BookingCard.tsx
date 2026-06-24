@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Calendar, Clock, MapPin, DollarSign, ChevronRight, Receipt } from 'lucide-react';
+import { Calendar, Clock, MapPin, DollarSign, ChevronRight, Receipt, XCircle } from 'lucide-react';
 import { Booking } from '../../lib/mockData';
 import { formatTime } from '../../utils/time';
 import { ReceiptModal } from '../ReceiptModal';
+import { CancelBookingModal } from '../CancelBookingModal';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 
@@ -20,11 +21,15 @@ const statusConfig = {
   accepted: { label: 'Accepted', bg: 'bg-green-100', text: 'text-green-700', dot: 'bg-green-400' },
   rejected: { label: 'Rejected', bg: 'bg-red-100', text: 'text-red-700', dot: 'bg-red-400' },
   completed: { label: 'Completed', bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-400' },
+  cancelled: { label: 'Cancelled', bg: 'bg-gray-100', text: 'text-gray-600', dot: 'bg-gray-400' },
 };
 
 export function BookingCard({ booking, role, onAccept, onReject, onComplete, onMarkPaid }: BookingCardProps) {
   const status = statusConfig[booking.status];
   const [showReceipt, setShowReceipt] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const isUpcoming = (booking.status === 'pending' || booking.status === 'accepted')
+    && new Date(`${booking.date}T${booking.time}:00`).getTime() > Date.now();
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -111,6 +116,17 @@ export function BookingCard({ booking, role, onAccept, onReject, onComplete, onM
         </div>
       )}
       {showReceipt && <ReceiptModal booking={booking} onClose={() => setShowReceipt(false)} />}
+
+      {role === 'parent' && isUpcoming && (
+        <button
+          onClick={() => setShowCancelModal(true)}
+          className="flex items-center justify-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-red-600 transition-colors py-1"
+        >
+          <XCircle className="w-4 h-4" />
+          Cancel or Reschedule
+        </button>
+      )}
+      {showCancelModal && <CancelBookingModal booking={booking} onClose={() => setShowCancelModal(false)} />}
 
       {/* Actions */}
       {role === 'coach' && booking.status === 'pending' && (

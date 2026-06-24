@@ -12,7 +12,7 @@ import { Navbar } from '../../components/layout/Navbar';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { formatTime, generateSlots } from '../../utils/time';
-import { buildAdminWhatsAppLink, VAT_RATE, SERVICE_FEE_AED } from '../../lib/config';
+import { buildAdminWhatsAppLink, buildWhatsAppLink, VAT_RATE, SERVICE_FEE_AED } from '../../lib/config';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -95,8 +95,35 @@ export function BookingPage() {
     : `First booking discount (${settings.firstBookingDiscountPercent}%)`;
   const finalPrice = originalPrice - discountAmount;
 
-  const commission = Math.round(finalPrice * settings.commissionRate);
-  const coachEarnings = finalPrice - commission;
+  // Who actually funds each discount is a real business policy, not just
+  // a display detail — it changes what the coach gets paid:
+  //   - First-booking discount: a coach-funded "try me" cost. The
+  //     platform's commission stays exactly what it would have been on
+  //     the FULL price; the coach's earnings absorb the discount.
+  //   - Referral discount: a platform-funded growth cost. The coach earns
+  //     their normal full amount; the platform's commission absorbs the
+  //     discount instead.
+  // Both are floored so neither side is ever asked to pay out more than
+  // was actually collected from the customer on this specific booking —
+  // if a discount is larger than what the funding side's normal cut would
+  // have covered, that side just earns AED 0 on this one booking rather
+  // than going negative.
+  const normalCommission = Math.round(originalPrice * settings.commissionRate);
+  const normalCoachEarnings = originalPrice - normalCommission;
+
+  let commission: number;
+  let coachEarnings: number;
+
+  if (discountApplies && usingReferralDiscount) {
+    commission = Math.max(0, normalCommission - discountAmount);
+    coachEarnings = finalPrice - commission;
+  } else if (discountApplies) {
+    commission = Math.min(normalCommission, finalPrice);
+    coachEarnings = finalPrice - commission;
+  } else {
+    commission = normalCommission;
+    coachEarnings = normalCoachEarnings;
+  }
 
   // Service fee and VAT are customer-facing charges added on top of the
   // session price — they go entirely to the platform (not split with the
@@ -106,11 +133,24 @@ export function BookingPage() {
   const vatAmount = Math.round((finalPrice + serviceFee) * VAT_RATE);
   const totalCharged = finalPrice + serviceFee + vatAmount;
 
-  const timeSlots = generateSlots(coach.availabilityStart, coach.availabilityEnd, coach.sessionDuration);
-  const selectedDayName = date ? DAY_NAMES[new Date(date + 'T00:00:00').getDay()] : null;
-  const isDayAvailable = !selectedDayName || coach.availability.includes(selectedDayName);
+  const creditAvailable = currentUser?.creditBalance || 0;
+  const [useCredit, setUseCredit] = useState(creditAvailable > 0);
+  const creditApplied = useCredit ? Math.min(creditAvailable, totalCharged) : 0;
+  const amountDueNow = totalCharged - creditApplied;
 
-  const adminMessage = `Hi, I just booked a session on CoachNow and I'd like to pay.\n\nCoach: ${coach.name}\nSport: ${coach.sportType}\nDate: ${date}\nTime: ${time ? formatTime(time) : ''}\nDuration: ${coach.sessionDuration} min\n${discountApplies ? `Session price: AED ${originalPrice} - ${discountLabel} = AED ${finalPrice}\n` : `Session price: AED ${finalPrice}\n`}Service fee: AED ${serviceFee}\nVAT (5%): AED ${vatAmount}\nTotal to pay: AED ${totalCharged}`;
+  const selectedDayName = date ? DAY_NAMES[new Date(date + 'T00:00:00').getDay()] : null;
+  const daySchedule = selectedDayName ? coach.weeklySchedule?.[selectedDayName as keyof typeof coach.weeklySchedule] : undefined;
+  const workingDays = coach.weeklySchedule ? Object.keys(coach.weeklySchedule) : coach.availability;
+  const isDayAvailable = !selectedDayName || !!daySchedule;
+  const timeSlots = daySchedule
+    ? generateSlots(daySchedule.start, daySchedule.end, coach.sessionDuration)
+    : (!coach.weeklySchedule ? generateSlots(coach.availabilityStart, coach.availabilityEnd, coach.sessionDuration) : []);
+
+  const adminMessage = `Hi, I just booked a session on CoachNow and I'd like to pay.\n\nCoach: ${coach.name}\nSport: ${coach.sportType}\nDate: ${date}\nTime: ${time ? formatTime(time) : ''}\nDuration: ${coach.sessionDuration} min\n${discountApplies ? `Session price: AED ${originalPrice} - ${discountLabel} = AED ${finalPrice}\n` : `Session price: AED ${finalPrice}\n`}Service fee: AED ${serviceFee}\nVAT (5%): AED ${vatAmount}\n${creditApplied > 0 ? `Subtotal: AED ${totalCharged}\nCredit applied: -AED ${creditApplied}\n` : ''}Total to pay: AED ${amountDueNow}`;
+
+  const coachMessage = currentUser
+    ? `Hi ${coach.name}, ${currentUser.name} just booked a session with you on CoachNow 🎉\n\nSport: ${coach.sportType}\nDate: ${date ? new Date(date).toLocaleDateString('en-AE', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}\nTime: ${time ? formatTime(time) : ''}\nDuration: ${coach.sessionDuration} min\n\nPlease accept or decline this request from your CoachNow dashboard.`
+    : '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,6 +180,7 @@ export function BookingPage() {
         notes,
         serviceFee,
         vatAmount,
+        ...(creditApplied > 0 ? { creditApplied } : {}),
         ...(discountApplies ? {
           originalPrice,
           discountAmount,
@@ -151,6 +192,9 @@ export function BookingPage() {
       // applied, so it can't be reused on a future booking.
       if (usingReferralDiscount && currentUser) {
         await updateDoc(doc(db, 'users', currentUser.id), { pendingReferralDiscountPercent: null });
+      }
+      if (creditApplied > 0 && currentUser) {
+        await updateDoc(doc(db, 'users', currentUser.id), { creditBalance: creditAvailable - creditApplied });
       }
 
       setSuccess(true);
@@ -219,9 +263,15 @@ export function BookingPage() {
                 <span className="text-gray-500">VAT (5%)</span>
                 <span className="font-semibold text-gray-800">AED {vatAmount}</span>
               </div>
+              {creditApplied > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-emerald-600">Credit applied</span>
+                  <span className="font-semibold text-emerald-600">- AED {creditApplied}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
-                <span className="text-gray-800 font-semibold">Total</span>
-                <span className="font-bold text-blue-600">AED {totalCharged}</span>
+                <span className="text-gray-800 font-semibold">Total to pay</span>
+                <span className="font-bold text-blue-600">AED {amountDueNow}</span>
               </div>
             </div>
 
@@ -234,6 +284,18 @@ export function BookingPage() {
               <MessageCircle className="w-5 h-5" />
               Chat on WhatsApp to Pay
             </a>
+
+            {coach.phone && (
+              <a
+                href={buildWhatsAppLink(coach.phone, coachMessage)}
+                target="_blank"
+                rel="noreferrer"
+                className="w-full flex items-center justify-center gap-2 border-2 border-[#25D366] text-[#1ebe5a] hover:bg-green-50 font-bold rounded-xl py-3.5 text-sm transition-colors mb-3"
+              >
+                <MessageCircle className="w-5 h-5" />
+                Notify {coach.name.split(' ')[0]} on WhatsApp
+              </a>
+            )}
 
             <div className="flex gap-3">
               <Button variant="outline" fullWidth onClick={() => navigate('/coaches')}>
@@ -309,11 +371,11 @@ export function BookingPage() {
                 )}
                 {date && !isDayAvailable && (
                   <p className="text-xs text-red-500 mt-2 font-medium">
-                    {coach.name} doesn't coach on {selectedDayName}s. Available days: {coach.availability.join(', ')}.
+                    {coach.name} doesn't coach on {selectedDayName}s. Available days: {workingDays.join(', ')}.
                   </p>
                 )}
                 <p className="text-xs text-gray-400 mt-2">
-                  {coach.name.split(' ')[0]} coaches on {coach.availability.join(', ')}.
+                  {coach.name.split(' ')[0]} coaches on {workingDays.join(', ')}.
                 </p>
               </Card>
 
@@ -324,7 +386,9 @@ export function BookingPage() {
                   Select Time
                 </h2>
                 <p className="text-xs text-gray-400 mb-3">
-                  Available {formatTime(coach.availabilityStart)} – {formatTime(coach.availabilityEnd)}
+                  {daySchedule
+                    ? `Available ${formatTime(daySchedule.start)} – ${formatTime(daySchedule.end)} on ${selectedDayName}`
+                    : 'Pick a date above to see available times'}
                 </p>
                 <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                   {timeSlots.map(slot => (
@@ -464,9 +528,28 @@ export function BookingPage() {
                     <span className="text-gray-500">VAT (5%)</span>
                     <span className="text-gray-700">AED {vatAmount}</span>
                   </div>
+                  {creditAvailable > 0 && (
+                    <label className="flex items-center gap-2 mb-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={useCredit}
+                        onChange={(e) => setUseCredit(e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">
+                        Use my AED {creditAvailable} credit
+                      </span>
+                    </label>
+                  )}
+                  {creditApplied > 0 && (
+                    <div className="flex justify-between text-sm mb-1.5">
+                      <span className="text-emerald-600">Credit applied</span>
+                      <span className="font-medium text-emerald-600">- AED {creditApplied}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-base font-bold pt-2 border-t border-gray-100">
-                    <span className="text-gray-800">Total</span>
-                    <span className="text-blue-600">AED {totalCharged}</span>
+                    <span className="text-gray-800">Total to pay</span>
+                    <span className="text-blue-600">AED {amountDueNow}</span>
                   </div>
                   <p className="text-xs text-gray-400 mt-1.5">
                     Pay securely online via the link our team sends on WhatsApp

@@ -10,6 +10,9 @@ export interface PlatformSettings {
   announcementMessage: string;
   referralProgramEnabled: boolean;
   referralDiscountPercent: number; // % off the referrer's next booking, once unlocked
+  cancellationFullRefundHours: number; // cancel at/before this many hours out: full refund as credit
+  cancellationPartialRefundHours: number; // cancel at/before this many hours out (but past the full-refund window): partial credit
+  cancellationPartialPenaltyPercent: number; // % forfeited in that partial window (e.g. 30 means keep 70% as credit)
 }
 
 const DEFAULT_SETTINGS: PlatformSettings = {
@@ -19,7 +22,10 @@ const DEFAULT_SETTINGS: PlatformSettings = {
   announcementEnabled: true,
   announcementMessage: '🎉 New here? Get 50% off your first booking — automatically applied at checkout.',
   referralProgramEnabled: true,
-  referralDiscountPercent: 20,
+  referralDiscountPercent: 10,
+  cancellationFullRefundHours: 24,
+  cancellationPartialRefundHours: 5,
+  cancellationPartialPenaltyPercent: 30,
 };
 const DOC_PATH = ['settings', 'platform'] as const;
 

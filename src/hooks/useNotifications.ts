@@ -11,7 +11,7 @@ export interface AppNotification {
   message: string;
   timestamp: string; // ISO
   link: string;
-  kind: 'booking' | 'payment' | 'signup' | 'review' | 'accepted' | 'rejected' | 'completed' | 'referral_reward';
+  kind: 'booking' | 'payment' | 'signup' | 'review' | 'accepted' | 'rejected' | 'completed' | 'referral_reward' | 'cancelled';
 }
 
 // Builds a real notification feed from data that already exists, tailored
@@ -119,6 +119,15 @@ export function useNotifications() {
               timestamp: b.paidAt,
               link: '/coach/bookings',
               kind: 'payment',
+            });
+          }
+          if (b.status === 'cancelled' && b.cancelledAt) {
+            items.push({
+              id: `cancelled-${b.id}`,
+              message: `${b.parentName} cancelled their ${b.sportType} session — that slot is open again`,
+              timestamp: b.cancelledAt,
+              link: '/coach/schedule',
+              kind: 'cancelled',
             });
           }
         });

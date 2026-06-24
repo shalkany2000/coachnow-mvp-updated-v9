@@ -1,11 +1,12 @@
 import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
-import { collection, doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Booking, mockBookings } from '../lib/mockData';
 import { useAuth } from './AuthContext';
 import { useInvoices } from './InvoiceContext';
 import { useSettings } from './SettingsContext';
 import { processReferralReward } from '../lib/referralActions';
+import { getCancellationOutcome, CancellationOutcome } from '../lib/cancellation';
 
 interface BookingContextType {
   bookings: Booking[];
@@ -14,6 +15,8 @@ interface BookingContextType {
   addBooking: (booking: Omit<Booking, 'id' | 'createdAt'>) => Promise<void>;
   updateBookingStatus: (id: string, status: Booking['status']) => Promise<void>;
   markBookingPaid: (id: string) => Promise<string>;
+  cancelBooking: (id: string) => Promise<CancellationOutcome>;
+  rescheduleBooking: (id: string, newDate: string, newTime: string) => Promise<void>;
   getBookingsForParent: (parentId: string, parentEmail?: string) => Booking[];
   getBookingsForCoach: (coachId: string) => Booking[];
 }
@@ -135,6 +138,50 @@ export function BookingProvider({ children }: { children: ReactNode }) {
   const getBookingsForCoach = (coachId: string) =>
     bookings.filter((b) => b.coachId === coachId);
 
+  const cancelBooking = async (id: string): Promise<CancellationOutcome> => {
+    const booking = bookings.find((b) => b.id === id);
+    if (!booking) throw new Error('Booking not found');
+
+    const outcome = getCancellationOutcome(booking.date, booking.time, booking.price, settings);
+
+    await updateDoc(doc(db, COLLECTION, id), {
+      status: 'cancelled',
+      cancelledAt: new Date().toISOString(),
+      refundCreditAmount: outcome.refundCreditAmount,
+      cancellationPenaltyPercent: outcome.penaltyPercent,
+    });
+
+    if (outcome.refundCreditAmount > 0) {
+      const userRef = doc(db, 'users', booking.parentId);
+      const userSnap = await getDoc(userRef);
+      const currentCredit = userSnap.exists() ? (userSnap.data().creditBalance as number) || 0 : 0;
+      await updateDoc(userRef, { creditBalance: currentCredit + outcome.refundCreditAmount });
+    }
+
+    return outcome;
+  };
+
+  const rescheduleBooking = async (id: string, newDate: string, newTime: string) => {
+    const booking = bookings.find((b) => b.id === id);
+    if (!booking) throw new Error('Booking not found');
+
+    // Re-checked here too, not just in the UI that offers the option —
+    // the 24h cutoff is a real policy boundary, not just a suggestion.
+    const outcome = getCancellationOutcome(booking.date, booking.time, booking.price, settings);
+    if (!outcome.canReschedule) {
+      throw new Error('Rescheduling is only available more than 24 hours before the original session.');
+    }
+
+    await updateDoc(doc(db, COLLECTION, id), {
+      date: newDate,
+      time: newTime,
+      status: 'pending', // the coach re-confirms the new slot, same as a fresh request
+      statusUpdatedAt: new Date().toISOString(),
+      rescheduledAt: new Date().toISOString(),
+      rescheduledFrom: { date: booking.date, time: booking.time },
+    });
+  };
+
   return (
     <BookingContext.Provider
       value={{
@@ -144,6 +191,8 @@ export function BookingProvider({ children }: { children: ReactNode }) {
         addBooking,
         updateBookingStatus,
         markBookingPaid,
+        cancelBooking,
+        rescheduleBooking,
         getBookingsForParent,
         getBookingsForCoach,
       }}

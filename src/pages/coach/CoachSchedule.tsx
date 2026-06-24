@@ -51,6 +51,7 @@ export function CoachSchedule() {
     accepted: { label: 'Confirmed', variant: 'green' as const },
     rejected: { label: 'Declined', variant: 'red' as const },
     completed: { label: 'Completed', variant: 'blue' as const },
+    cancelled: { label: 'Cancelled', variant: 'gray' as const },
   };
 
   const getBookingsForDate = (date: Date) => {

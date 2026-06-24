@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Bell, Calendar, DollarSign, UserPlus, Star, CheckCircle2, XCircle, PartyPopper, Gift } from 'lucide-react';
+import { Bell, Calendar, DollarSign, UserPlus, Star, CheckCircle2, XCircle, PartyPopper, Gift, CalendarX } from 'lucide-react';
 import { useOutsideClick } from '../../hooks/useOutsideClick';
 import { AppNotification } from '../../hooks/useNotifications';
 import { formatRelativeTime } from '../../utils/time';
@@ -14,6 +14,7 @@ const notificationIcons = {
   rejected: <XCircle className="w-4 h-4" />,
   completed: <PartyPopper className="w-4 h-4" />,
   referral_reward: <Gift className="w-4 h-4" />,
+  cancelled: <CalendarX className="w-4 h-4" />,
 };
 
 const notificationColors: Record<AppNotification['kind'], string> = {
@@ -25,6 +26,7 @@ const notificationColors: Record<AppNotification['kind'], string> = {
   rejected: 'bg-red-50 text-red-600',
   completed: 'bg-indigo-50 text-indigo-600',
   referral_reward: 'bg-pink-50 text-pink-600',
+  cancelled: 'bg-orange-50 text-orange-600',
 };
 
 interface NotificationBellProps {

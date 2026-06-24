@@ -8,8 +8,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
-import { SPORT_TYPES, DUBAI_AREAS } from '../../lib/mockData';
-import { formatTime } from '../../utils/time';
+import { SPORT_TYPES, DUBAI_AREAS, DAY_KEYS, DayKey, DaySchedule, Coach } from '../../lib/mockData';
 
 const sidebarItems = [
   { label: 'Dashboard', path: '/coach/dashboard', icon: <LayoutDashboard className="w-full h-full" /> },
@@ -19,8 +18,29 @@ const sidebarItems = [
   { label: 'Earnings', path: '/coach/earnings', icon: <DollarSign className="w-full h-full" /> },
 ];
 
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const DAYS = DAY_KEYS as readonly string[];
 const LANGUAGES = ['English', 'Arabic', 'Hindi', 'Urdu', 'Filipino', 'French', 'Russian', 'Spanish'];
+
+// New coaches with no saved schedule yet default to a sensible 9-5,
+// Mon-Fri starting point — existing coaches who already had a uniform
+// availability window get that window carried over per-day automatically,
+// so nobody's calendar silently empties out when this feature ships.
+function deriveInitialSchedule(coach?: Coach): Partial<Record<DayKey, DaySchedule>> {
+  if (coach?.weeklySchedule && Object.keys(coach.weeklySchedule).length > 0) {
+    return coach.weeklySchedule;
+  }
+  if (coach?.availability?.length) {
+    const schedule: Partial<Record<DayKey, DaySchedule>> = {};
+    coach.availability.forEach((day) => {
+      schedule[day as DayKey] = {
+        start: coach.availabilityStart || '08:00',
+        end: coach.availabilityEnd || '18:00',
+      };
+    });
+    return schedule;
+  }
+  return {};
+}
 
 export function CoachProfileSetup() {
   const { currentUser } = useAuth();
@@ -41,9 +61,7 @@ export function CoachProfileSetup() {
     location: existingCoach?.location || '',
     experience: existingCoach?.experience || '',
     avatar: existingCoach?.avatar || '',
-    availability: existingCoach?.availability || [],
-    availabilityStart: existingCoach?.availabilityStart || '08:00',
-    availabilityEnd: existingCoach?.availabilityEnd || '18:00',
+    weeklySchedule: deriveInitialSchedule(existingCoach),
     sessionDuration: existingCoach?.sessionDuration?.toString() || '60',
     languages: existingCoach?.languages || [],
     onLeave: existingCoach?.onLeave || false,
@@ -59,9 +77,7 @@ export function CoachProfileSetup() {
         location: existingCoach.location,
         experience: existingCoach.experience,
         avatar: existingCoach.avatar,
-        availability: existingCoach.availability,
-        availabilityStart: existingCoach.availabilityStart || '08:00',
-        availabilityEnd: existingCoach.availabilityEnd || '18:00',
+        weeklySchedule: deriveInitialSchedule(existingCoach),
         sessionDuration: (existingCoach.sessionDuration || 60).toString(),
         languages: existingCoach.languages,
         onLeave: existingCoach.onLeave || false,
@@ -69,12 +85,25 @@ export function CoachProfileSetup() {
     }
   }, [existingCoach?.id]);
 
-  const toggleDay = (day: string) => {
-    setForm(prev => ({
-      ...prev,
-      availability: prev.availability.includes(day)
-        ? prev.availability.filter(d => d !== day)
-        : [...prev.availability, day],
+  const toggleDayWorking = (day: string) => {
+    setForm((p) => {
+      const next = { ...p.weeklySchedule };
+      if (next[day as DayKey]) {
+        delete next[day as DayKey];
+      } else {
+        next[day as DayKey] = { start: '08:00', end: '18:00' };
+      }
+      return { ...p, weeklySchedule: next };
+    });
+  };
+
+  const updateDaySchedule = (day: string, field: 'start' | 'end', value: string) => {
+    setForm((p) => ({
+      ...p,
+      weeklySchedule: {
+        ...p.weeklySchedule,
+        [day]: { ...p.weeklySchedule[day as DayKey], [field]: value } as DaySchedule,
+      },
     }));
   };
 
@@ -95,12 +124,27 @@ export function CoachProfileSetup() {
       setError('Please fill in your name, sport, location and price before saving.');
       return;
     }
-    if (form.availabilityStart >= form.availabilityEnd) {
-      setError('Your "available until" time must be after your "available from" time.');
+    const workingDays = Object.keys(form.weeklySchedule) as DayKey[];
+    if (workingDays.length === 0) {
+      setError('Set your hours for at least one day so clients can actually book you.');
+      return;
+    }
+    const invalidDay = workingDays.find((d) => {
+      const s = form.weeklySchedule[d];
+      return s && s.start >= s.end;
+    });
+    if (invalidDay) {
+      setError(`${invalidDay}'s end time must be after its start time.`);
       return;
     }
     setLoading(true);
     try {
+      // availability/availabilityStart/End are kept as a quick summary
+      // (which days, the widest start-to-end range) for places that just
+      // need a glance — actual booking slots always come from
+      // weeklySchedule, the real per-day source of truth.
+      const starts = workingDays.map((d) => form.weeklySchedule[d]!.start);
+      const ends = workingDays.map((d) => form.weeklySchedule[d]!.end);
       const profileData = {
         name: form.name,
         bio: form.bio,
@@ -109,13 +153,15 @@ export function CoachProfileSetup() {
         location: form.location,
         experience: form.experience,
         avatar: form.avatar,
-        availability: form.availability,
-        availabilityStart: form.availabilityStart,
-        availabilityEnd: form.availabilityEnd,
+        availability: workingDays,
+        availabilityStart: starts.sort()[0],
+        availabilityEnd: ends.sort().slice(-1)[0],
+        weeklySchedule: form.weeklySchedule,
         sessionDuration: parseInt(form.sessionDuration) || 60,
         languages: form.languages,
         onLeave: form.onLeave,
         email: currentUser?.email || '',
+        phone: currentUser?.phone || '',
       };
       if (existingCoach) {
         await updateCoach(existingCoach.id, profileData);
@@ -255,50 +301,57 @@ export function CoachProfileSetup() {
 
             {/* Availability */}
             <Card>
-              <h2 className="font-bold text-gray-900 mb-4">Weekly Availability</h2>
-              <div className="flex flex-wrap gap-2">
-                {DAYS.map(day => (
-                  <button
-                    key={day}
-                    type="button"
-                    onClick={() => toggleDay(day)}
-                    className={`px-4 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${
-                      form.availability.includes(day)
-                        ? 'border-blue-500 bg-blue-50 text-blue-700'
-                        : 'border-gray-200 text-gray-500 hover:border-gray-300'
-                    }`}
-                  >
-                    {day}
-                  </button>
-                ))}
+              <h2 className="font-bold text-gray-900 mb-1">Weekly Availability</h2>
+              <p className="text-xs text-gray-400 mb-4">
+                Set your own hours for each day — toggle a day on, then pick your start and end time.
+              </p>
+              <div className="space-y-2.5">
+                {DAYS.map(day => {
+                  const daySchedule = form.weeklySchedule[day as DayKey];
+                  const isWorking = !!daySchedule;
+                  return (
+                    <div
+                      key={day}
+                      className={`rounded-xl border-2 p-3 transition-all ${isWorking ? 'border-blue-200 bg-blue-50/40' : 'border-gray-100'}`}
+                    >
+                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => toggleDayWorking(day)}
+                          className="flex items-center gap-2.5"
+                        >
+                          <span className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${isWorking ? 'bg-blue-600' : 'bg-gray-300'}`}>
+                            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${isWorking ? 'translate-x-4' : ''}`} />
+                          </span>
+                          <span className={`text-sm font-semibold w-10 text-left ${isWorking ? 'text-gray-900' : 'text-gray-400'}`}>{day}</span>
+                        </button>
+                        {isWorking && daySchedule && (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="time"
+                              value={daySchedule.start}
+                              onChange={e => updateDaySchedule(day, 'start', e.target.value)}
+                              className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <span className="text-gray-400 text-sm">–</span>
+                            <input
+                              type="time"
+                              value={daySchedule.end}
+                              onChange={e => updateDaySchedule(day, 'end', e.target.value)}
+                              className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                        )}
+                      </div>
+                      {isWorking && daySchedule && daySchedule.start >= daySchedule.end && (
+                        <p className="text-xs text-red-500 mt-2 pl-[50px]">End time must be after start time.</p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-              <p className="text-xs text-gray-400 mt-3 mb-4">Select the days you're available to coach</p>
-
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
-                <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-1.5">Available from</label>
-                  <input
-                    type="time"
-                    value={form.availabilityStart}
-                    onChange={e => setForm(p => ({ ...p, availabilityStart: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-1.5">Available until</label>
-                  <input
-                    type="time"
-                    value={form.availabilityEnd}
-                    onChange={e => setForm(p => ({ ...p, availabilityEnd: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-                  />
-                </div>
-              </div>
-              {form.availabilityStart >= form.availabilityEnd && (
-                <p className="text-xs text-red-500 mt-2">End time must be after start time.</p>
-              )}
               <p className="text-xs text-gray-400 mt-3">
-                Clients will only be able to book hourly slots inside this time window, on the days you've selected above.
+                Clients will only be able to book slots inside each day's specific hours above.
               </p>
             </Card>
 
@@ -398,18 +451,10 @@ export function CoachProfileSetup() {
                     <span className="font-medium text-gray-800">{form.experience}</span>
                   </div>
                 )}
-                {form.availability.length > 0 && (
+                {Object.keys(form.weeklySchedule).length > 0 && (
                   <div className="flex justify-between">
                     <span className="text-gray-500">Available</span>
-                    <span className="font-medium text-gray-800">{form.availability.length} days/week</span>
-                  </div>
-                )}
-                {form.availabilityStart < form.availabilityEnd && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Hours</span>
-                    <span className="font-medium text-gray-800">
-                      {formatTime(form.availabilityStart)} – {formatTime(form.availabilityEnd)}
-                    </span>
+                    <span className="font-medium text-gray-800">{Object.keys(form.weeklySchedule).length} days/week</span>
                   </div>
                 )}
               </div>
