@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, User, BookOpen, Calendar, DollarSign, Save, CheckCircle, AlertCircle } from 'lucide-react';
+import { LayoutDashboard, User, BookOpen, Calendar, DollarSign, Save, CheckCircle, AlertCircle, X, Plus } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCoaches } from '../../contexts/CoachContext';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -8,7 +8,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
-import { SPORT_TYPES, DUBAI_AREAS, DAY_KEYS, DayKey, DaySchedule, Coach } from '../../lib/mockData';
+import { SPORT_TYPES, UAE_EMIRATES, DAY_KEYS, DayKey, TimeBlock, Coach } from '../../lib/mockData';
 
 const sidebarItems = [
   { label: 'Dashboard', path: '/coach/dashboard', icon: <LayoutDashboard className="w-full h-full" /> },
@@ -25,17 +25,17 @@ const LANGUAGES = ['English', 'Arabic', 'Hindi', 'Urdu', 'Filipino', 'French', '
 // Mon-Fri starting point — existing coaches who already had a uniform
 // availability window get that window carried over per-day automatically,
 // so nobody's calendar silently empties out when this feature ships.
-function deriveInitialSchedule(coach?: Coach): Partial<Record<DayKey, DaySchedule>> {
+function deriveInitialSchedule(coach?: Coach): Partial<Record<DayKey, TimeBlock[]>> {
   if (coach?.weeklySchedule && Object.keys(coach.weeklySchedule).length > 0) {
     return coach.weeklySchedule;
   }
   if (coach?.availability?.length) {
-    const schedule: Partial<Record<DayKey, DaySchedule>> = {};
+    const schedule: Partial<Record<DayKey, TimeBlock[]>> = {};
     coach.availability.forEach((day) => {
-      schedule[day as DayKey] = {
+      schedule[day as DayKey] = [{
         start: coach.availabilityStart || '08:00',
         end: coach.availabilityEnd || '18:00',
-      };
+      }];
     });
     return schedule;
   }
@@ -91,20 +91,44 @@ export function CoachProfileSetup() {
       if (next[day as DayKey]) {
         delete next[day as DayKey];
       } else {
-        next[day as DayKey] = { start: '08:00', end: '18:00' };
+        next[day as DayKey] = [{ start: '08:00', end: '18:00' }];
       }
       return { ...p, weeklySchedule: next };
     });
   };
 
-  const updateDaySchedule = (day: string, field: 'start' | 'end', value: string) => {
-    setForm((p) => ({
-      ...p,
-      weeklySchedule: {
-        ...p.weeklySchedule,
-        [day]: { ...p.weeklySchedule[day as DayKey], [field]: value } as DaySchedule,
-      },
-    }));
+  const updateTimeBlock = (day: string, blockIndex: number, field: 'start' | 'end', value: string) => {
+    setForm((p) => {
+      const blocks = [...(p.weeklySchedule[day as DayKey] || [])];
+      blocks[blockIndex] = { ...blocks[blockIndex], [field]: value };
+      return { ...p, weeklySchedule: { ...p.weeklySchedule, [day]: blocks } };
+    });
+  };
+
+  // Adds another window to the same day — this is how a coach represents
+  // working mornings and evenings while skipping the hours in between.
+  const addTimeBlock = (day: string) => {
+    setForm((p) => {
+      const blocks = p.weeklySchedule[day as DayKey] || [];
+      const lastEnd = blocks[blocks.length - 1]?.end || '12:00';
+      return {
+        ...p,
+        weeklySchedule: { ...p.weeklySchedule, [day]: [...blocks, { start: lastEnd, end: '18:00' }] },
+      };
+    });
+  };
+
+  const removeTimeBlock = (day: string, blockIndex: number) => {
+    setForm((p) => {
+      const blocks = (p.weeklySchedule[day as DayKey] || []).filter((_, i) => i !== blockIndex);
+      const next = { ...p.weeklySchedule };
+      if (blocks.length === 0) {
+        delete next[day as DayKey]; // no blocks left = day off
+      } else {
+        next[day as DayKey] = blocks;
+      }
+      return { ...p, weeklySchedule: next };
+    });
   };
 
   const toggleLanguage = (lang: string) => {
@@ -129,12 +153,9 @@ export function CoachProfileSetup() {
       setError('Set your hours for at least one day so clients can actually book you.');
       return;
     }
-    const invalidDay = workingDays.find((d) => {
-      const s = form.weeklySchedule[d];
-      return s && s.start >= s.end;
-    });
+    const invalidDay = workingDays.find((d) => (form.weeklySchedule[d] || []).some((b) => b.start >= b.end));
     if (invalidDay) {
-      setError(`${invalidDay}'s end time must be after its start time.`);
+      setError(`${invalidDay} has a block where the end time isn't after the start time.`);
       return;
     }
     setLoading(true);
@@ -143,8 +164,9 @@ export function CoachProfileSetup() {
       // (which days, the widest start-to-end range) for places that just
       // need a glance — actual booking slots always come from
       // weeklySchedule, the real per-day source of truth.
-      const starts = workingDays.map((d) => form.weeklySchedule[d]!.start);
-      const ends = workingDays.map((d) => form.weeklySchedule[d]!.end);
+      const allBlocks = workingDays.flatMap((d) => form.weeklySchedule[d] || []);
+      const starts = allBlocks.map((b) => b.start);
+      const ends = allBlocks.map((b) => b.end);
       const profileData = {
         name: form.name,
         bio: form.bio,
@@ -263,11 +285,11 @@ export function CoachProfileSetup() {
                   placeholder="Select sport"
                 />
                 <Select
-                  label="Primary Location"
+                  label="Emirate"
                   value={form.location}
                   onChange={e => setForm(p => ({ ...p, location: e.target.value }))}
-                  options={DUBAI_AREAS.map(a => ({ value: a, label: a }))}
-                  placeholder="Select area"
+                  options={UAE_EMIRATES.map(a => ({ value: a, label: a }))}
+                  placeholder="Select emirate"
                 />
                 <Input
                   label="Price per Session (AED)"
@@ -303,48 +325,70 @@ export function CoachProfileSetup() {
             <Card>
               <h2 className="font-bold text-gray-900 mb-1">Weekly Availability</h2>
               <p className="text-xs text-gray-400 mb-4">
-                Set your own hours for each day — toggle a day on, then pick your start and end time.
+                Toggle a day on, then set your hours. Add a second block on the same day if you
+                want to work mornings and evenings but skip the middle of the day.
               </p>
               <div className="space-y-2.5">
                 {DAYS.map(day => {
-                  const daySchedule = form.weeklySchedule[day as DayKey];
-                  const isWorking = !!daySchedule;
+                  const dayBlocks = form.weeklySchedule[day as DayKey] || [];
+                  const isWorking = dayBlocks.length > 0;
                   return (
                     <div
                       key={day}
                       className={`rounded-xl border-2 p-3 transition-all ${isWorking ? 'border-blue-200 bg-blue-50/40' : 'border-gray-100'}`}
                     >
-                      <div className="flex items-center justify-between gap-3 flex-wrap">
-                        <button
-                          type="button"
-                          onClick={() => toggleDayWorking(day)}
-                          className="flex items-center gap-2.5"
-                        >
-                          <span className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${isWorking ? 'bg-blue-600' : 'bg-gray-300'}`}>
-                            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${isWorking ? 'translate-x-4' : ''}`} />
-                          </span>
-                          <span className={`text-sm font-semibold w-10 text-left ${isWorking ? 'text-gray-900' : 'text-gray-400'}`}>{day}</span>
-                        </button>
-                        {isWorking && daySchedule && (
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="time"
-                              value={daySchedule.start}
-                              onChange={e => updateDaySchedule(day, 'start', e.target.value)}
-                              className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            <span className="text-gray-400 text-sm">–</span>
-                            <input
-                              type="time"
-                              value={daySchedule.end}
-                              onChange={e => updateDaySchedule(day, 'end', e.target.value)}
-                              className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                          </div>
-                        )}
-                      </div>
-                      {isWorking && daySchedule && daySchedule.start >= daySchedule.end && (
-                        <p className="text-xs text-red-500 mt-2 pl-[50px]">End time must be after start time.</p>
+                      <button
+                        type="button"
+                        onClick={() => toggleDayWorking(day)}
+                        className="flex items-center gap-2.5"
+                      >
+                        <span className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${isWorking ? 'bg-blue-600' : 'bg-gray-300'}`}>
+                          <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${isWorking ? 'translate-x-4' : ''}`} />
+                        </span>
+                        <span className={`text-sm font-semibold ${isWorking ? 'text-gray-900' : 'text-gray-400'}`}>{day}</span>
+                      </button>
+
+                      {isWorking && (
+                        <div className="mt-3 space-y-2">
+                          {dayBlocks.map((block, i) => (
+                            <div key={i} className="flex items-center gap-2 flex-wrap">
+                              <input
+                                type="time"
+                                value={block.start}
+                                onChange={e => updateTimeBlock(day, i, 'start', e.target.value)}
+                                className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                              <span className="text-gray-400 text-sm">–</span>
+                              <input
+                                type="time"
+                                value={block.end}
+                                onChange={e => updateTimeBlock(day, i, 'end', e.target.value)}
+                                className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                              {block.start >= block.end && (
+                                <span className="text-xs text-red-500">End must be after start</span>
+                              )}
+                              {dayBlocks.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeTimeBlock(day, i)}
+                                  aria-label="Remove this time block"
+                                  className="text-gray-400 hover:text-red-500 p-1"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => addTimeBlock(day)}
+                            className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 pt-1"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            Add another block (e.g. skip a lunch break)
+                          </button>
+                        </div>
                       )}
                     </div>
                   );

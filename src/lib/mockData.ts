@@ -26,10 +26,10 @@ export interface Referral {
   rewardedAt?: string;
 }
 
-// One coach's hours for a single day of the week. A day that's a rest day
-// is simply absent from weeklySchedule (or explicitly null) — not present
-// in the map at all.
-export interface DaySchedule {
+// A single working window within a day, e.g. 07:00-11:00. A day can have
+// more than one of these — that's how a coach represents "I work mornings
+// and evenings but skip the middle of the day."
+export interface TimeBlock {
   start: string; // 'HH:mm'
   end: string;   // 'HH:mm'
 }
@@ -56,10 +56,13 @@ export interface Coach {
   availabilityStart: string;
   availabilityEnd: string;
   // Per-day working hours — the real source of truth for which slots a
-  // customer can book on a given date. availability/availabilityStart/End
-  // above are kept in sync automatically for places that just want a
-  // quick "which days, roughly what hours" summary (e.g. coach cards).
-  weeklySchedule?: Partial<Record<DayKey, DaySchedule>>;
+  // customer can book on a given date. Each day maps to a LIST of time
+  // blocks, since a coach might work 07:00-11:00 and then 16:00-20:00 on
+  // the same day, skipping the middle. An empty/missing day means a day
+  // off. availability/availabilityStart/End above are kept in sync
+  // automatically for places that just want a quick "which days, roughly
+  // what hours" summary (e.g. coach cards).
+  weeklySchedule?: Partial<Record<DayKey, TimeBlock[]>>;
   sessionDuration: number; // minutes
   verified: boolean;
   onLeave?: boolean;
@@ -132,19 +135,14 @@ export const SPORT_TYPES = [
   'Badminton',
 ];
 
-export const DUBAI_AREAS = [
-  'Dubai Marina',
-  'JBR',
-  'Downtown Dubai',
-  'Jumeirah',
-  'Business Bay',
-  'Palm Jumeirah',
-  'Arabian Ranches',
-  'Mirdif',
-  'Deira',
-  'Bur Dubai',
-  'Al Barsha',
-  'DIFC',
+export const UAE_EMIRATES = [
+  'Dubai',
+  'Abu Dhabi',
+  'Sharjah',
+  'Ajman',
+  'Umm Al Quwain',
+  'Ras Al Khaimah',
+  'Fujairah',
 ];
 
 export const mockCoaches: Coach[] = [
@@ -155,7 +153,7 @@ export const mockCoaches: Coach[] = [
     email: 'ahmed@coach.com',
     sportType: 'Swimming',
     pricePerHour: 250,
-    location: 'Dubai Marina',
+    location: 'Dubai',
     rating: 0,
     reviewCount: 0,
     bio: 'Former national swimming champion with 10+ years of coaching experience. Specializing in all age groups from beginners to competitive swimmers. I create personalized training plans that focus on technique, endurance, and confidence in water.',
@@ -166,11 +164,11 @@ export const mockCoaches: Coach[] = [
     availabilityStart: '07:00',
     availabilityEnd: '15:00',
     weeklySchedule: {
-      Mon: { start: '07:00', end: '15:00' },
-      Tue: { start: '07:00', end: '15:00' },
-      Wed: { start: '07:00', end: '15:00' },
-      Thu: { start: '07:00', end: '15:00' },
-      Sat: { start: '07:00', end: '15:00' },
+      Mon: [{ start: '07:00', end: '15:00' }],
+      Tue: [{ start: '07:00', end: '15:00' }],
+      Wed: [{ start: '07:00', end: '15:00' }],
+      Thu: [{ start: '07:00', end: '15:00' }],
+      Sat: [{ start: '07:00', end: '15:00' }],
     },
     sessionDuration: 45,
     verified: true,
@@ -182,7 +180,7 @@ export const mockCoaches: Coach[] = [
     email: 'sarah@coach.com',
     sportType: 'Fitness',
     pricePerHour: 200,
-    location: 'JBR',
+    location: 'Dubai',
     rating: 0,
     reviewCount: 0,
     bio: 'Certified personal trainer and nutrition coach. Specializing in women\'s fitness, weight management, and post-natal recovery. My sessions are energetic, fun and results-driven. Clients see visible changes within 4 weeks.',
@@ -193,11 +191,11 @@ export const mockCoaches: Coach[] = [
     availabilityStart: '06:00',
     availabilityEnd: '12:00',
     weeklySchedule: {
-      Mon: { start: '06:00', end: '12:00' },
-      Wed: { start: '06:00', end: '12:00' },
-      Fri: { start: '06:00', end: '12:00' },
-      Sat: { start: '06:00', end: '12:00' },
-      Sun: { start: '06:00', end: '12:00' },
+      Mon: [{ start: '06:00', end: '12:00' }],
+      Wed: [{ start: '06:00', end: '12:00' }],
+      Fri: [{ start: '06:00', end: '12:00' }],
+      Sat: [{ start: '06:00', end: '12:00' }],
+      Sun: [{ start: '06:00', end: '12:00' }],
     },
     sessionDuration: 60,
     verified: true,
@@ -209,7 +207,7 @@ export const mockCoaches: Coach[] = [
     email: 'carlos@coach.com',
     sportType: 'Padel',
     pricePerHour: 180,
-    location: 'Jumeirah',
+    location: 'Dubai',
     rating: 0,
     reviewCount: 0,
     bio: 'Padel-obsessed coach who fell in love with the sport in Spain before bringing it to Dubai. I work with complete beginners learning the basics of the glass court, right through to players sharpening their doubles strategy and wall play.',
@@ -220,10 +218,10 @@ export const mockCoaches: Coach[] = [
     availabilityStart: '15:00',
     availabilityEnd: '19:00',
     weeklySchedule: {
-      Tue: { start: '15:00', end: '19:00' },
-      Thu: { start: '15:00', end: '19:00' },
-      Sat: { start: '15:00', end: '19:00' },
-      Sun: { start: '15:00', end: '19:00' },
+      Tue: [{ start: '15:00', end: '19:00' }],
+      Thu: [{ start: '15:00', end: '19:00' }],
+      Sat: [{ start: '15:00', end: '19:00' }],
+      Sun: [{ start: '15:00', end: '19:00' }],
     },
     sessionDuration: 60,
     verified: true,
@@ -235,7 +233,7 @@ export const mockCoaches: Coach[] = [
     email: 'priya@coach.com',
     sportType: 'Badminton',
     pricePerHour: 150,
-    location: 'Palm Jumeirah',
+    location: 'Dubai',
     rating: 0,
     reviewCount: 0,
     bio: 'Former state-level badminton player from India with 8 years of coaching experience. I focus on footwork, racket control, and smart shot selection — equally comfortable starting a total beginner or sharpening a competitive player\'s game.',
@@ -246,11 +244,11 @@ export const mockCoaches: Coach[] = [
     availabilityStart: '07:00',
     availabilityEnd: '11:00',
     weeklySchedule: {
-      Mon: { start: '07:00', end: '11:00' },
-      Tue: { start: '07:00', end: '11:00' },
-      Wed: { start: '07:00', end: '11:00' },
-      Thu: { start: '07:00', end: '11:00' },
-      Fri: { start: '07:00', end: '11:00' },
+      Mon: [{ start: '07:00', end: '11:00' }],
+      Tue: [{ start: '07:00', end: '11:00' }],
+      Wed: [{ start: '07:00', end: '11:00' }],
+      Thu: [{ start: '07:00', end: '11:00' }],
+      Fri: [{ start: '07:00', end: '11:00' }],
     },
     sessionDuration: 60,
     verified: true,
@@ -262,7 +260,7 @@ export const mockCoaches: Coach[] = [
     email: 'omar@coach.com',
     sportType: 'Padel',
     pricePerHour: 220,
-    location: 'Arabian Ranches',
+    location: 'Dubai',
     rating: 0,
     reviewCount: 0,
     bio: 'Ex-professional footballer turned full-time padel coach after the sport took over Dubai. I bring a strong tactical eye to the court — positioning, shot selection, and doubles teamwork — for everyone from first-timers to club-level players.',
@@ -273,10 +271,10 @@ export const mockCoaches: Coach[] = [
     availabilityStart: '16:00',
     availabilityEnd: '20:00',
     weeklySchedule: {
-      Mon: { start: '16:00', end: '20:00' },
-      Wed: { start: '16:00', end: '20:00' },
-      Fri: { start: '16:00', end: '20:00' },
-      Sat: { start: '16:00', end: '20:00' },
+      Mon: [{ start: '16:00', end: '20:00' }],
+      Wed: [{ start: '16:00', end: '20:00' }],
+      Fri: [{ start: '16:00', end: '20:00' }],
+      Sat: [{ start: '16:00', end: '20:00' }],
     },
     sessionDuration: 60,
     verified: true,
@@ -288,7 +286,7 @@ export const mockCoaches: Coach[] = [
     email: 'jessica@coach.com',
     sportType: 'Tennis',
     pricePerHour: 300,
-    location: 'Downtown Dubai',
+    location: 'Dubai',
     rating: 0,
     reviewCount: 0,
     bio: 'ITF-certified tennis coach with experience coaching players of all ages. Whether you\'re picking up a racket for the first time or looking to compete, I\'ll help you develop proper technique and game strategy.',
@@ -299,10 +297,10 @@ export const mockCoaches: Coach[] = [
     availabilityStart: '09:00',
     availabilityEnd: '17:00',
     weeklySchedule: {
-      Tue: { start: '09:00', end: '17:00' },
-      Thu: { start: '09:00', end: '17:00' },
-      Sat: { start: '09:00', end: '17:00' },
-      Sun: { start: '09:00', end: '17:00' },
+      Tue: [{ start: '09:00', end: '17:00' }],
+      Thu: [{ start: '09:00', end: '17:00' }],
+      Sat: [{ start: '09:00', end: '17:00' }],
+      Sun: [{ start: '09:00', end: '17:00' }],
     },
     sessionDuration: 60,
     verified: false,
@@ -314,7 +312,7 @@ export const mockCoaches: Coach[] = [
     email: 'rami@coach.com',
     sportType: 'Badminton',
     pricePerHour: 190,
-    location: 'Business Bay',
+    location: 'Dubai',
     rating: 0,
     reviewCount: 0,
     bio: 'Competitive badminton player turned coach, focused on building a solid foundation — grip, footwork, and smash technique — before moving on to match strategy. I teach both children and adults in a structured, encouraging environment.',
@@ -325,12 +323,12 @@ export const mockCoaches: Coach[] = [
     availabilityStart: '17:00',
     availabilityEnd: '21:00',
     weeklySchedule: {
-      Mon: { start: '17:00', end: '21:00' },
-      Tue: { start: '17:00', end: '21:00' },
-      Wed: { start: '17:00', end: '21:00' },
-      Thu: { start: '17:00', end: '21:00' },
-      Fri: { start: '17:00', end: '21:00' },
-      Sat: { start: '17:00', end: '21:00' },
+      Mon: [{ start: '17:00', end: '21:00' }],
+      Tue: [{ start: '17:00', end: '21:00' }],
+      Wed: [{ start: '17:00', end: '21:00' }],
+      Thu: [{ start: '17:00', end: '21:00' }],
+      Fri: [{ start: '17:00', end: '21:00' }],
+      Sat: [{ start: '17:00', end: '21:00' }],
     },
     sessionDuration: 60,
     verified: true,
@@ -342,7 +340,7 @@ export const mockCoaches: Coach[] = [
     email: 'nadia@coach.com',
     sportType: 'Swimming',
     pricePerHour: 280,
-    location: 'DIFC',
+    location: 'Dubai',
     rating: 0,
     reviewCount: 0,
     bio: 'Olympic-level swimming background. I specialize in competitive swimming preparation and open water training. My unique approach combines strength, technique, and mental conditioning for peak performance.',
@@ -353,9 +351,9 @@ export const mockCoaches: Coach[] = [
     availabilityStart: '06:00',
     availabilityEnd: '10:00',
     weeklySchedule: {
-      Mon: { start: '06:00', end: '10:00' },
-      Wed: { start: '06:00', end: '10:00' },
-      Fri: { start: '06:00', end: '10:00' },
+      Mon: [{ start: '06:00', end: '10:00' }],
+      Wed: [{ start: '06:00', end: '10:00' }],
+      Fri: [{ start: '06:00', end: '10:00' }],
     },
     sessionDuration: 45,
     verified: true,
@@ -380,7 +378,7 @@ export const mockBookings: Booking[] = [
     price: 250,
     commission: 38,
     coachEarnings: 212,
-    location: 'Dubai Marina',
+    location: 'Dubai',
     notes: 'Beginner level, 8-year-old child',
     createdAt: '2025-08-01T10:00:00Z',
   },
@@ -401,7 +399,7 @@ export const mockBookings: Booking[] = [
     price: 200,
     commission: 30,
     coachEarnings: 170,
-    location: 'JBR',
+    location: 'Dubai',
     createdAt: '2025-08-05T14:30:00Z',
   },
   {
@@ -421,7 +419,7 @@ export const mockBookings: Booking[] = [
     price: 180,
     commission: 27,
     coachEarnings: 153,
-    location: 'Jumeirah',
+    location: 'Dubai',
     notes: 'Group of 2 kids, ages 6 and 9',
     createdAt: '2025-07-28T09:15:00Z',
   },
@@ -442,7 +440,7 @@ export const mockBookings: Booking[] = [
     price: 150,
     commission: 22,
     coachEarnings: 128,
-    location: 'Palm Jumeirah',
+    location: 'Dubai',
     notes: 'First yoga session, focus on flexibility',
     createdAt: '2025-08-12T11:20:00Z',
   },
@@ -463,7 +461,7 @@ export const mockBookings: Booking[] = [
     price: 220,
     commission: 33,
     coachEarnings: 187,
-    location: 'Arabian Ranches',
+    location: 'Dubai',
     notes: '10-year-old, beginner level',
     createdAt: '2025-08-13T16:45:00Z',
   },
@@ -484,7 +482,7 @@ export const mockBookings: Booking[] = [
     price: 300,
     commission: 45,
     coachEarnings: 255,
-    location: 'Downtown Dubai',
+    location: 'Dubai',
     createdAt: '2025-08-02T09:00:00Z',
   },
   {
@@ -504,7 +502,7 @@ export const mockBookings: Booking[] = [
     price: 190,
     commission: 28,
     coachEarnings: 162,
-    location: 'Business Bay',
+    location: 'Dubai',
     notes: 'Coach unavailable that day — rebooking needed',
     createdAt: '2025-08-14T13:10:00Z',
   },
@@ -525,7 +523,7 @@ export const mockBookings: Booking[] = [
     price: 280,
     commission: 42,
     coachEarnings: 238,
-    location: 'DIFC',
+    location: 'Dubai',
     notes: 'Competitive swimmer, stroke technique focus',
     createdAt: '2025-08-03T08:30:00Z',
   },

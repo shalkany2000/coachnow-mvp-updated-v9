@@ -139,11 +139,11 @@ export function BookingPage() {
   const amountDueNow = totalCharged - creditApplied;
 
   const selectedDayName = date ? DAY_NAMES[new Date(date + 'T00:00:00').getDay()] : null;
-  const daySchedule = selectedDayName ? coach.weeklySchedule?.[selectedDayName as keyof typeof coach.weeklySchedule] : undefined;
+  const dayBlocks = selectedDayName ? coach.weeklySchedule?.[selectedDayName as keyof typeof coach.weeklySchedule] : undefined;
   const workingDays = coach.weeklySchedule ? Object.keys(coach.weeklySchedule) : coach.availability;
-  const isDayAvailable = !selectedDayName || !!daySchedule;
-  const timeSlots = daySchedule
-    ? generateSlots(daySchedule.start, daySchedule.end, coach.sessionDuration)
+  const isDayAvailable = !selectedDayName || (!!dayBlocks && dayBlocks.length > 0);
+  const timeSlots = dayBlocks && dayBlocks.length > 0
+    ? dayBlocks.flatMap((block) => generateSlots(block.start, block.end, coach.sessionDuration))
     : (!coach.weeklySchedule ? generateSlots(coach.availabilityStart, coach.availabilityEnd, coach.sessionDuration) : []);
 
   const adminMessage = `Hi, I just booked a session on CoachNow and I'd like to pay.\n\nCoach: ${coach.name}\nSport: ${coach.sportType}\nDate: ${date}\nTime: ${time ? formatTime(time) : ''}\nDuration: ${coach.sessionDuration} min\n${discountApplies ? `Session price: AED ${originalPrice} - ${discountLabel} = AED ${finalPrice}\n` : `Session price: AED ${finalPrice}\n`}Service fee: AED ${serviceFee}\nVAT (5%): AED ${vatAmount}\n${creditApplied > 0 ? `Subtotal: AED ${totalCharged}\nCredit applied: -AED ${creditApplied}\n` : ''}Total to pay: AED ${amountDueNow}`;
@@ -386,8 +386,8 @@ export function BookingPage() {
                   Select Time
                 </h2>
                 <p className="text-xs text-gray-400 mb-3">
-                  {daySchedule
-                    ? `Available ${formatTime(daySchedule.start)} – ${formatTime(daySchedule.end)} on ${selectedDayName}`
+                  {dayBlocks && dayBlocks.length > 0
+                    ? `Available ${dayBlocks.map(b => `${formatTime(b.start)}–${formatTime(b.end)}`).join(', ')} on ${selectedDayName}`
                     : 'Pick a date above to see available times'}
                 </p>
                 <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">

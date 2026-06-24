@@ -31,8 +31,8 @@ export function CancelBookingModal({ booking, onClose }: CancelBookingModalProps
   const today = new Date().toISOString().split('T')[0];
 
   const selectedDayName = newDate ? DAY_NAMES[new Date(newDate + 'T00:00:00').getDay()] : null;
-  const daySchedule = selectedDayName ? coach?.weeklySchedule?.[selectedDayName] : undefined;
-  const timeSlots = daySchedule ? generateSlots(daySchedule.start, daySchedule.end, booking.duration) : [];
+  const dayBlocks = selectedDayName ? coach?.weeklySchedule?.[selectedDayName] : undefined;
+  const timeSlots = dayBlocks ? dayBlocks.flatMap((block) => generateSlots(block.start, block.end, booking.duration)) : [];
 
   const handleCancel = async () => {
     setLoading(true); setError('');

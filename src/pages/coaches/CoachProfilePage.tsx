@@ -164,8 +164,8 @@ export function CoachProfilePage() {
               <h2 className="text-lg font-bold text-gray-900 mb-4">Weekly Availability</h2>
               <div className="flex gap-2 flex-wrap">
                 {DAY_KEYS.map(day => {
-                  const daySchedule = coach.weeklySchedule?.[day];
-                  const isWorking = !!daySchedule;
+                  const dayBlocks = coach.weeklySchedule?.[day];
+                  const isWorking = !!dayBlocks && dayBlocks.length > 0;
                   return (
                     <div
                       key={day}
@@ -176,11 +176,11 @@ export function CoachProfilePage() {
                       }`}
                     >
                       <span className="text-xs font-bold">{day}</span>
-                      {isWorking && daySchedule && (
-                        <span className="text-[10px] font-medium text-blue-500 mt-1 whitespace-nowrap">
-                          {formatTime(daySchedule.start)}–{formatTime(daySchedule.end)}
+                      {isWorking && dayBlocks && dayBlocks.map((block, i) => (
+                        <span key={i} className="text-[10px] font-medium text-blue-500 mt-1 whitespace-nowrap">
+                          {formatTime(block.start)}–{formatTime(block.end)}
                         </span>
-                      )}
+                      ))}
                     </div>
                   );
                 })}
