@@ -28,6 +28,7 @@ export function BookingPage() {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [notes, setNotes] = useState('');
+  const [trainingAddress, setTrainingAddress] = useState(currentUser?.homeAddress || '');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
@@ -149,7 +150,7 @@ export function BookingPage() {
   const adminMessage = `Hi, I just booked a session on CoachNow and I'd like to pay.\n\nCoach: ${coach.name}\nSport: ${coach.sportType}\nDate: ${date}\nTime: ${time ? formatTime(time) : ''}\nDuration: ${coach.sessionDuration} min\n${discountApplies ? `Session price: AED ${originalPrice} - ${discountLabel} = AED ${finalPrice}\n` : `Session price: AED ${finalPrice}\n`}Service fee: AED ${serviceFee}\nVAT (5%): AED ${vatAmount}\n${creditApplied > 0 ? `Subtotal: AED ${totalCharged}\nCredit applied: -AED ${creditApplied}\n` : ''}Total to pay: AED ${amountDueNow}`;
 
   const coachMessage = currentUser
-    ? `Hi ${coach.name}, ${currentUser.name} just booked a session with you on CoachNow 🎉\n\nSport: ${coach.sportType}\nDate: ${date ? new Date(date).toLocaleDateString('en-AE', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}\nTime: ${time ? formatTime(time) : ''}\nDuration: ${coach.sessionDuration} min\n\nPlease accept or decline this request from your CoachNow dashboard.`
+    ? `Hi ${coach.name}, ${currentUser.name} just booked a session with you on CoachNow 🎉\n\nSport: ${coach.sportType}\nDate: ${date ? new Date(date).toLocaleDateString('en-AE', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}\nTime: ${time ? formatTime(time) : ''}\nDuration: ${coach.sessionDuration} min\n${trainingAddress ? `Address: ${trainingAddress}\n` : ''}\nPlease accept or decline this request from your CoachNow dashboard.`
     : '';
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -180,6 +181,7 @@ export function BookingPage() {
         notes,
         serviceFee,
         vatAmount,
+        ...(trainingAddress.trim() ? { trainingAddress: trainingAddress.trim() } : {}),
         ...(creditApplied > 0 ? { creditApplied } : {}),
         ...(discountApplies ? {
           originalPrice,
@@ -421,6 +423,25 @@ export function BookingPage() {
                     <p className="text-xs text-gray-500 mt-0.5">Coach's primary training location. Exact address shared after confirmation.</p>
                   </div>
                 </div>
+              </Card>
+
+              {/* Training Address */}
+              <Card>
+                <h2 className="font-bold text-gray-900 flex items-center gap-2 mb-1">
+                  <MapPin className="w-5 h-5 text-blue-600" />
+                  Training Address
+                </h2>
+                <p className="text-xs text-gray-400 mb-3">
+                  Where should {coach.name.split(' ')[0]} come to for this session?
+                  {currentUser?.homeAddress && ' Pre-filled from your saved address — edit it if this session is somewhere else.'}
+                </p>
+                <textarea
+                  placeholder="e.g. Villa 12, Street 4, Al Barsha, Dubai"
+                  value={trainingAddress}
+                  onChange={e => setTrainingAddress(e.target.value)}
+                  rows={2}
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all resize-none"
+                />
               </Card>
 
               {/* Notes */}

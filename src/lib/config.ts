@@ -14,6 +14,13 @@ export const VAT_RATE = 0.05;
 // service fees work.
 export const SERVICE_FEE_AED = 7;
 
+// Opens Google Maps with a text search — no API key or billing needed,
+// works as a plain link. Good enough to get a coach to the right place
+// from a typed address, without setting up a paid mapping API.
+export function buildMapSearchLink(address: string): string {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+}
+
 export function buildAdminWhatsAppLink(message: string): string {
   return `https://wa.me/${ADMIN_WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }

@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Calendar, Clock, MapPin, DollarSign, ChevronRight, Receipt, XCircle } from 'lucide-react';
+import { Calendar, Clock, MapPin, DollarSign, ChevronRight, Receipt, XCircle, Navigation } from 'lucide-react';
 import { Booking } from '../../lib/mockData';
 import { formatTime } from '../../utils/time';
+import { buildMapSearchLink } from '../../lib/config';
 import { ReceiptModal } from '../ReceiptModal';
 import { CancelBookingModal } from '../CancelBookingModal';
 import { Card } from '../ui/Card';
@@ -82,6 +83,22 @@ export function BookingCard({ booking, role, onAccept, onReject, onComplete, onM
           <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
           <span>{booking.location}</span>
         </div>
+        {booking.trainingAddress && (
+          <div className="flex items-start gap-2 text-sm text-gray-600 bg-blue-50 rounded-lg px-2.5 py-2 -mx-0.5">
+            <Navigation className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+            <div className="min-w-0">
+              <span className="block">{booking.trainingAddress}</span>
+              <a
+                href={buildMapSearchLink(booking.trainingAddress)}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs font-semibold text-blue-600 hover:underline"
+              >
+                View on map →
+              </a>
+            </div>
+          </div>
+        )}
         {(role === 'coach' || role === 'admin') && (
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <DollarSign className="w-4 h-4 text-gray-400 flex-shrink-0" />

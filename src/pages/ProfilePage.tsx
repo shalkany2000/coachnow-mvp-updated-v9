@@ -1,7 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, Phone, Calendar, Shield, LogOut, ArrowRight } from 'lucide-react';
+import { User, Mail, Phone, Calendar, Shield, LogOut, ArrowRight, MapPin, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { Navbar } from '../components/layout/Navbar';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -17,14 +19,37 @@ const roleConfig = {
 export function ProfilePage() {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
+  const [address, setAddress] = useState(currentUser?.homeAddress || '');
+  const [addressLoading, setAddressLoading] = useState(false);
+  const [addressSaved, setAddressSaved] = useState(false);
+  const [addressError, setAddressError] = useState('');
 
   useEffect(() => {
     if (!currentUser) navigate('/login');
   }, [currentUser, navigate]);
 
+  useEffect(() => {
+    setAddress(currentUser?.homeAddress || '');
+  }, [currentUser?.homeAddress]);
+
   if (!currentUser) {
     return null;
   }
+
+  const handleSaveAddress = async () => {
+    setAddressError(''); setAddressSaved(false);
+    setAddressLoading(true);
+    try {
+      await updateDoc(doc(db, 'users', currentUser.id), { homeAddress: address.trim() });
+      setAddressSaved(true);
+      setTimeout(() => setAddressSaved(false), 3000);
+    } catch (err) {
+      console.error('Failed to save address:', err);
+      setAddressError("Couldn't save — check your connection and try again.");
+    } finally {
+      setAddressLoading(false);
+    }
+  };
 
   const rc = roleConfig[currentUser.role];
 
@@ -98,12 +123,43 @@ export function ProfilePage() {
             </div>
           </Card>
 
-          <div className="bg-yellow-50 border border-yellow-100 rounded-2xl p-4">
-            <p className="text-sm text-yellow-800 font-medium mb-1">🚀 Demo Mode</p>
-            <p className="text-xs text-yellow-700">
-              This is a demo version of CoachNow. All data is stored locally in your browser.
-              In production, real Firebase authentication and Firestore would be used.
-            </p>
+          {currentUser.role === 'parent' && (
+            <Card className="space-y-3">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-blue-600" />
+                <h3 className="font-bold text-gray-900 text-sm">Home Address</h3>
+              </div>
+              <p className="text-xs text-gray-500">
+                Saved here once, then pre-filled every time you book — so your coach always knows where to go.
+                You can still edit it per booking if a session happens somewhere else.
+              </p>
+              <textarea
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                rows={2}
+                placeholder="e.g. Villa 12, Street 4, Al Barsha, Dubai"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all resize-none"
+              />
+              {addressError && (
+                <div className="flex items-center gap-2 text-sm text-red-600 font-medium">
+                  <AlertCircle className="w-4 h-4" />
+                  {addressError}
+                </div>
+              )}
+              {addressSaved && (
+                <div className="flex items-center gap-2 text-sm text-emerald-600 font-medium">
+                  <CheckCircle className="w-4 h-4" />
+                  Saved.
+                </div>
+              )}
+              <Button onClick={handleSaveAddress} loading={addressLoading} size="sm">
+                Save Address
+              </Button>
+            </Card>
+          )}
+
+          <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
+            <p className="text-sm text-blue-800 font-medium">CoachNow — Dubai's sports coaching marketplace 🇦🇪</p>
           </div>
         </div>
 

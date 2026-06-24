@@ -10,6 +10,7 @@ export interface User {
   referredBy?: string; // userId of whoever referred this person, if any
   pendingReferralDiscountPercent?: number; // unlocked reward, applied + cleared on their next booking
   creditBalance?: number; // AED credit from cancellations, usable toward any future booking
+  homeAddress?: string; // parent's saved address, so the coach knows where to go for training
 }
 
 // Tracks a single referral relationship from signup through reward —
@@ -117,6 +118,7 @@ export interface Booking {
   cancellationPenaltyPercent?: number; // % forfeited at the time of cancellation, for transparency
   rescheduledAt?: string;
   rescheduledFrom?: { date: string; time: string }; // the original slot, for an audit trail
+  trainingAddress?: string; // where the coach should actually go for this specific session
   paid: boolean;
   paidAt?: string;
   price: number;
