@@ -12,7 +12,7 @@ import { Navbar } from '../../components/layout/Navbar';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { formatTime, generateSlots } from '../../utils/time';
-import { buildAdminWhatsAppLink, buildWhatsAppLink, VAT_RATE, SERVICE_FEE_AED } from '../../lib/config';
+import { buildAdminWhatsAppLink, buildWhatsAppLink, isMapLink, VAT_RATE, SERVICE_FEE_AED } from '../../lib/config';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -464,19 +464,27 @@ export function BookingPage() {
               <Card>
                 <h2 className="font-bold text-gray-900 flex items-center gap-2 mb-1">
                   <MapPin className="w-5 h-5 text-blue-600" />
-                  Training Address
+                  Training Location
                 </h2>
-                <p className="text-xs text-gray-400 mb-3">
-                  Where should {coach.name.split(' ')[0]} come to for this session?
+                <p className="text-xs text-gray-400 mb-2">
+                  {coach.name.split(' ')[0]} comes to you — for the most accurate directions, open Google Maps,
+                  find your exact location, tap <strong>Share</strong>, then <strong>Copy link</strong> and paste
+                  it below. A typed address works too if that's easier.
                   {currentUser?.homeAddress && ' Pre-filled from your saved address — edit it if this session is somewhere else.'}
                 </p>
                 <textarea
-                  placeholder="e.g. Villa 12, Street 4, Al Barsha, Dubai"
+                  placeholder="Paste your Google Maps link, or type your address (e.g. Villa 12, Street 4, Al Barsha, Dubai)"
                   value={trainingAddress}
                   onChange={e => setTrainingAddress(e.target.value)}
                   rows={2}
                   className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all resize-none"
                 />
+                {isMapLink(trainingAddress) && (
+                  <p className="text-xs text-emerald-600 font-medium mt-1.5 flex items-center gap-1">
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    Maps link detected — {coach.name.split(' ')[0]} will see your exact pin.
+                  </p>
+                )}
               </Card>
 
               {/* Notes */}

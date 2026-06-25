@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Calendar, Clock, MapPin, DollarSign, ChevronRight, Receipt, XCircle, Navigation } from 'lucide-react';
 import { Booking } from '../../lib/mockData';
 import { formatTime } from '../../utils/time';
-import { buildMapSearchLink } from '../../lib/config';
+import { buildMapLink } from '../../lib/config';
 import { ReceiptModal } from '../ReceiptModal';
 import { CancelBookingModal } from '../CancelBookingModal';
 import { Card } from '../ui/Card';
@@ -89,7 +89,7 @@ export function BookingCard({ booking, role, onAccept, onReject, onComplete, onM
             <div className="min-w-0">
               <span className="block">{booking.trainingAddress}</span>
               <a
-                href={buildMapSearchLink(booking.trainingAddress)}
+                href={buildMapLink(booking.trainingAddress)}
                 target="_blank"
                 rel="noreferrer"
                 className="text-xs font-semibold text-blue-600 hover:underline"

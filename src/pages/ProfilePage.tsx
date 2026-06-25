@@ -4,6 +4,7 @@ import { User, Mail, Phone, Calendar, Shield, LogOut, ArrowRight, MapPin, CheckC
 import { useAuth } from '../contexts/AuthContext';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { isMapLink } from '../lib/config';
 import { Navbar } from '../components/layout/Navbar';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -131,15 +132,22 @@ export function ProfilePage() {
               </div>
               <p className="text-xs text-gray-500">
                 Saved here once, then pre-filled every time you book — so your coach always knows where to go.
-                You can still edit it per booking if a session happens somewhere else.
+                For the most accurate directions, open Google Maps, find your location, tap <strong>Share</strong>,
+                then <strong>Copy link</strong> and paste it here. A typed address works too.
               </p>
               <textarea
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 rows={2}
-                placeholder="e.g. Villa 12, Street 4, Al Barsha, Dubai"
+                placeholder="Paste your Google Maps link, or type your address"
                 className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all resize-none"
               />
+              {isMapLink(address) && (
+                <p className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  Maps link detected — your coach will see your exact pin.
+                </p>
+              )}
               {addressError && (
                 <div className="flex items-center gap-2 text-sm text-red-600 font-medium">
                   <AlertCircle className="w-4 h-4" />

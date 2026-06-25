@@ -14,11 +14,23 @@ export const VAT_RATE = 0.05;
 // service fees work.
 export const SERVICE_FEE_AED = 7;
 
-// Opens Google Maps with a text search — no API key or billing needed,
-// works as a plain link. Good enough to get a coach to the right place
-// from a typed address, without setting up a paid mapping API.
-export function buildMapSearchLink(address: string): string {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+// If the customer pasted a real Google Maps link (the kind you get from
+// tapping "Share" on a pinned location in the Maps app), this is true —
+// and that link should be used directly rather than re-wrapped in a text
+// search, since it points to their exact pin, not just a guess from typed
+// text.
+export function isMapLink(value: string): boolean {
+  const v = value.trim().toLowerCase();
+  return v.startsWith('http://') || v.startsWith('https://');
+}
+
+// Resolves whatever a customer put in their address field into something
+// clickable: their own pasted Maps link, used as-is (most precise), or a
+// plain typed address, wrapped in a Maps text search (still works, just
+// less precise than an actual dropped pin).
+export function buildMapLink(addressOrLink: string): string {
+  if (isMapLink(addressOrLink)) return addressOrLink.trim();
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressOrLink)}`;
 }
 
 export function buildAdminWhatsAppLink(message: string): string {
