@@ -8,7 +8,7 @@ import { BookingCard } from '../../components/bookings/BookingCard';
 import { useAdminSidebarItems } from '../../hooks/useAdminSidebarItems';
 import { buildAdminWhatsAppLink } from '../../lib/config';
 
-const TABS = ['All', 'Pending', 'Accepted', 'Completed', 'Rejected'];
+const TABS = ['All', 'Pending', 'Accepted', 'Completed', 'Rejected', 'Cancelled'];
 
 export function AdminBookings() {
   const { items: sidebarItems, title: sidebarTitle } = useAdminSidebarItems();

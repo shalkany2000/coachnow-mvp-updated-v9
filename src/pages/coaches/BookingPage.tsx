@@ -31,6 +31,24 @@ export function BookingPage() {
   const [trainingAddress, setTrainingAddress] = useState(currentUser?.homeAddress || '');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  // Captured at the moment of submission — without this, the success
+  // screen and WhatsApp messages would recompute live, and the discount
+  // would silently vanish the instant the new booking lands in this
+  // parent's own booking list (since "is this their first booking" goes
+  // from true to false the moment their own new booking exists).
+  const [confirmedSummary, setConfirmedSummary] = useState<{
+    discountApplies: boolean;
+    originalPrice: number;
+    discountAmount: number;
+    discountLabel: string;
+    finalPrice: number;
+    serviceFee: number;
+    vatAmount: number;
+    creditApplied: number;
+    amountDueNow: number;
+    adminMessage: string;
+    coachMessage: string;
+  } | null>(null);
   const [error, setError] = useState('');
 
   const isHidden = coach && isSeedCoach(coach) && !isSportLive(coach.sportType, coaches);
@@ -161,6 +179,15 @@ export function BookingPage() {
     if (!time) { setError('Please select a time slot.'); return; }
     setLoading(true); setError('');
     try {
+      // Snapshot everything now, while the discount calculation is still
+      // correct — addBooking below is what makes it incorrect for any
+      // *subsequent* render of this page.
+      const summary = {
+        discountApplies, originalPrice, discountAmount, discountLabel,
+        finalPrice, serviceFee, vatAmount, creditApplied, amountDueNow,
+        adminMessage, coachMessage,
+      };
+
       await addBooking({
         parentId: currentUser.id,
         parentName: currentUser.name,
@@ -199,6 +226,7 @@ export function BookingPage() {
         await updateDoc(doc(db, 'users', currentUser.id), { creditBalance: creditAvailable - creditApplied });
       }
 
+      setConfirmedSummary(summary);
       setSuccess(true);
     } catch (err) {
       console.error('Booking failed:', err);
@@ -208,7 +236,14 @@ export function BookingPage() {
     }
   };
 
-  if (success) {
+  if (success && confirmedSummary) {
+    const {
+      discountApplies: confirmedDiscountApplies, originalPrice: confirmedOriginalPrice,
+      discountAmount: confirmedDiscountAmount, discountLabel: confirmedDiscountLabel,
+      finalPrice: confirmedFinalPrice, serviceFee: confirmedServiceFee, vatAmount: confirmedVatAmount,
+      creditApplied: confirmedCreditApplied, amountDueNow: confirmedAmountDueNow,
+      adminMessage: confirmedAdminMessage, coachMessage: confirmedCoachMessage,
+    } = confirmedSummary;
     return (
       <div className="min-h-screen bg-gray-50">
         <Navbar />
@@ -241,44 +276,44 @@ export function BookingPage() {
                 <span className="text-gray-500">Duration</span>
                 <span className="font-semibold text-gray-800">{coach.sessionDuration} minutes</span>
               </div>
-              {discountApplies && (
+              {confirmedDiscountApplies && (
                 <>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Original price</span>
-                    <span className="text-gray-400 line-through">AED {originalPrice}</span>
+                    <span className="text-gray-400 line-through">AED {confirmedOriginalPrice}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-emerald-600">{discountLabel}</span>
-                    <span className="font-semibold text-emerald-600">- AED {discountAmount}</span>
+                    <span className="text-emerald-600">{confirmedDiscountLabel}</span>
+                    <span className="font-semibold text-emerald-600">- AED {confirmedDiscountAmount}</span>
                   </div>
                 </>
               )}
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Session price</span>
-                <span className="font-semibold text-gray-800">AED {finalPrice}</span>
+                <span className="font-semibold text-gray-800">AED {confirmedFinalPrice}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Service fee</span>
-                <span className="font-semibold text-gray-800">AED {serviceFee}</span>
+                <span className="font-semibold text-gray-800">AED {confirmedServiceFee}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">VAT (5%)</span>
-                <span className="font-semibold text-gray-800">AED {vatAmount}</span>
+                <span className="font-semibold text-gray-800">AED {confirmedVatAmount}</span>
               </div>
-              {creditApplied > 0 && (
+              {confirmedCreditApplied > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-emerald-600">Credit applied</span>
-                  <span className="font-semibold text-emerald-600">- AED {creditApplied}</span>
+                  <span className="font-semibold text-emerald-600">- AED {confirmedCreditApplied}</span>
                 </div>
               )}
               <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
                 <span className="text-gray-800 font-semibold">Total to pay</span>
-                <span className="font-bold text-blue-600">AED {amountDueNow}</span>
+                <span className="font-bold text-blue-600">AED {confirmedAmountDueNow}</span>
               </div>
             </div>
 
             <a
-              href={buildAdminWhatsAppLink(adminMessage)}
+              href={buildAdminWhatsAppLink(confirmedAdminMessage)}
               target="_blank"
               rel="noreferrer"
               className="w-full flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1ebe5a] text-white font-bold rounded-xl py-3.5 text-sm transition-colors mb-3"
@@ -289,7 +324,7 @@ export function BookingPage() {
 
             {coach.phone && (
               <a
-                href={buildWhatsAppLink(coach.phone, coachMessage)}
+                href={buildWhatsAppLink(coach.phone, confirmedCoachMessage)}
                 target="_blank"
                 rel="noreferrer"
                 className="w-full flex items-center justify-center gap-2 border-2 border-[#25D366] text-[#1ebe5a] hover:bg-green-50 font-bold rounded-xl py-3.5 text-sm transition-colors mb-3"

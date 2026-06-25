@@ -163,7 +163,7 @@ export function BookingCard({ booking, role, onAccept, onReject, onComplete, onM
       )}
       {role === 'admin' && (
         <div className="space-y-3">
-          {!booking.paid && (
+          {!booking.paid && (booking.status === 'accepted' || booking.status === 'completed') && (
             <Button variant="secondary" size="sm" fullWidth onClick={() => onMarkPaid?.(booking.id)}>
               Mark as Paid
             </Button>

@@ -26,7 +26,13 @@ export function CancelBookingModal({ booking, onClose }: CancelBookingModalProps
   const [error, setError] = useState('');
   const [result, setResult] = useState<{ type: 'cancelled'; credit: number } | { type: 'rescheduled' } | null>(null);
 
-  const outcome = getCancellationOutcome(booking.date, booking.time, booking.price, settings);
+  // Must match BookingContext.cancelBooking's calculation exactly, or this
+  // preview would promise a different amount than what actually gets
+  // credited. Critically, an unpaid booking never gets credit back —
+  // there's nothing to refund if no money was ever collected.
+  const totalPaid = booking.price + (booking.serviceFee || 0) + (booking.vatAmount || 0);
+  const rawOutcome = getCancellationOutcome(booking.date, booking.time, totalPaid, settings);
+  const outcome = booking.paid ? rawOutcome : { ...rawOutcome, refundCreditAmount: 0, penaltyPercent: 0 };
   const coach = getCoach(booking.coachId);
   const today = new Date().toISOString().split('T')[0];
 
@@ -105,14 +111,14 @@ export function CancelBookingModal({ booking, onClose }: CancelBookingModalProps
               <p className="text-sm text-gray-500 mt-1">{booking.sportType} with {booking.coachName}</p>
             </div>
 
-            <div className={`rounded-xl px-4 py-3 text-sm ${outcome.tier === 'full' ? 'bg-emerald-50 text-emerald-800' : outcome.tier === 'partial' ? 'bg-amber-50 text-amber-800' : 'bg-red-50 text-red-800'}`}>
-              {outcome.tier === 'full' && (
+            <div className={`rounded-xl px-4 py-3 text-sm ${!booking.paid ? 'bg-blue-50 text-blue-800' : outcome.tier === 'full' ? 'bg-emerald-50 text-emerald-800' : outcome.tier === 'partial' ? 'bg-amber-50 text-amber-800' : 'bg-red-50 text-red-800'}`}>
+              {!booking.paid ? (
+                <p>This booking hasn't been paid for yet, so cancelling it is free — there's nothing to refund since no payment was made.</p>
+              ) : outcome.tier === 'full' ? (
                 <p>You're cancelling with plenty of notice — <strong>AED {outcome.refundCreditAmount} full credit</strong> will be added to your account.</p>
-              )}
-              {outcome.tier === 'partial' && (
-                <p>This is within {settings.cancellationFullRefundHours}h of your session — you'll get <strong>AED {outcome.refundCreditAmount} credit</strong> ({outcome.penaltyPercent}% forfeited).</p>
-              )}
-              {outcome.tier === 'none' && (
+              ) : outcome.tier === 'partial' ? (
+                <p>This is within {settings.cancellationFullRefundHours}h of your session — you'll get <strong>AED {outcome.refundCreditAmount} credit</strong> ({rawOutcome.penaltyPercent}% forfeited).</p>
+              ) : (
                 <p>This is within {settings.cancellationPartialRefundHours}h of your session — <strong>no credit will be issued</strong> for this cancellation.</p>
               )}
             </div>

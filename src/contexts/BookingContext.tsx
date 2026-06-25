@@ -142,23 +142,36 @@ export function BookingProvider({ children }: { children: ReactNode }) {
     const booking = bookings.find((b) => b.id === id);
     if (!booking) throw new Error('Booking not found');
 
-    const outcome = getCancellationOutcome(booking.date, booking.time, booking.price, settings);
+    // Refund is based on the FULL amount actually paid — session price
+    // plus service fee plus VAT — not just the session price component.
+    // Using only booking.price here would shortchange every customer by
+    // their fee + VAT on every cancellation, full-refund tier or not.
+    const totalPaid = booking.price + (booking.serviceFee || 0) + (booking.vatAmount || 0);
+    const outcome = getCancellationOutcome(booking.date, booking.time, totalPaid, settings);
+
+    // Critical: only issue credit if money was actually collected for
+    // this booking. Payment happens manually via WhatsApp after a
+    // request is made, so most pending/accepted bookings are unpaid at
+    // the time of cancellation — without this check, anyone could
+    // repeatedly book then cancel and accumulate unlimited free credit
+    // for sessions they never paid a single dirham for.
+    const actualRefundCreditAmount = booking.paid ? outcome.refundCreditAmount : 0;
 
     await updateDoc(doc(db, COLLECTION, id), {
       status: 'cancelled',
       cancelledAt: new Date().toISOString(),
-      refundCreditAmount: outcome.refundCreditAmount,
-      cancellationPenaltyPercent: outcome.penaltyPercent,
+      refundCreditAmount: actualRefundCreditAmount,
+      cancellationPenaltyPercent: booking.paid ? outcome.penaltyPercent : 0,
     });
 
-    if (outcome.refundCreditAmount > 0) {
+    if (actualRefundCreditAmount > 0) {
       const userRef = doc(db, 'users', booking.parentId);
       const userSnap = await getDoc(userRef);
       const currentCredit = userSnap.exists() ? (userSnap.data().creditBalance as number) || 0 : 0;
-      await updateDoc(userRef, { creditBalance: currentCredit + outcome.refundCreditAmount });
+      await updateDoc(userRef, { creditBalance: currentCredit + actualRefundCreditAmount });
     }
 
-    return outcome;
+    return { ...outcome, refundCreditAmount: actualRefundCreditAmount };
   };
 
   const rescheduleBooking = async (id: string, newDate: string, newTime: string) => {
@@ -167,7 +180,10 @@ export function BookingProvider({ children }: { children: ReactNode }) {
 
     // Re-checked here too, not just in the UI that offers the option —
     // the 24h cutoff is a real policy boundary, not just a suggestion.
-    const outcome = getCancellationOutcome(booking.date, booking.time, booking.price, settings);
+    // Only outcome.canReschedule is used below, which depends purely on
+    // hours-until-session, not price — so the price argument here is a
+    // placeholder, not a financial calculation.
+    const outcome = getCancellationOutcome(booking.date, booking.time, 0, settings);
     if (!outcome.canReschedule) {
       throw new Error('Rescheduling is only available more than 24 hours before the original session.');
     }

@@ -65,7 +65,17 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isSignedIn();
       allow create, update: if isSignedIn() && (
-        request.auth.uid == userId ||
+        (
+          request.auth.uid == userId &&
+          // referredBy may only be set once (at registration) and never
+          // changed afterward — without this, anyone could edit their own
+          // referredBy field at any time to redirect a referral reward to
+          // an arbitrary account, since this clause otherwise allows a
+          // user to freely edit every other field on their own profile.
+          (!('referredBy' in request.resource.data) ||
+            !('referredBy' in resource.data) ||
+            request.resource.data.referredBy == resource.data.referredBy)
+        ) ||
         isAdmin() ||
         // Staff can unlock a referral reward on someone else's account
         // (set during markBookingPaid) without being able to touch any

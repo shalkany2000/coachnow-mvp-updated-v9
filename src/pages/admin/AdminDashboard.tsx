@@ -107,6 +107,7 @@ export function AdminDashboard() {
                 { label: 'Accepted', count: bookings.filter(b => b.status === 'accepted').length, color: 'bg-green-400' },
                 { label: 'Completed', count: bookings.filter(b => b.status === 'completed').length, color: 'bg-blue-400' },
                 { label: 'Rejected', count: bookings.filter(b => b.status === 'rejected').length, color: 'bg-red-400' },
+                { label: 'Cancelled', count: bookings.filter(b => b.status === 'cancelled').length, color: 'bg-gray-400' },
               ].map(item => (
                 <div key={item.label} className="flex items-center gap-3">
                   <div className={`w-3 h-3 rounded-full flex-shrink-0 ${item.color}`} />

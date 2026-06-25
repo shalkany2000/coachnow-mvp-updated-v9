@@ -16,7 +16,7 @@ const sidebarItems = [
   { label: 'Earnings', path: '/coach/earnings', icon: <DollarSign className="w-full h-full" /> },
 ];
 
-const TABS = ['All', 'Pending', 'Confirmed', 'Completed', 'Declined'];
+const TABS = ['All', 'Pending', 'Confirmed', 'Completed', 'Declined', 'Cancelled'];
 
 export function CoachBookings() {
   const navigate = useNavigate();
@@ -48,6 +48,7 @@ export function CoachBookings() {
     if (activeTab === 'Confirmed') return b.status === 'accepted';
     if (activeTab === 'Completed') return b.status === 'completed';
     if (activeTab === 'Declined') return b.status === 'rejected';
+    if (activeTab === 'Cancelled') return b.status === 'cancelled';
     return true;
   });
 
@@ -79,6 +80,7 @@ export function CoachBookings() {
                     if (tab === 'Confirmed') return b.status === 'accepted';
                     if (tab === 'Completed') return b.status === 'completed';
                     if (tab === 'Declined') return b.status === 'rejected';
+                    if (tab === 'Cancelled') return b.status === 'cancelled';
                     return false;
                   }).length})
                 </span>

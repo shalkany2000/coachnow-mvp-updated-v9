@@ -15,7 +15,7 @@ const sidebarItems = [
   { label: 'My Bookings', path: '/parent/bookings', icon: <BookOpen className="w-full h-full" /> },
 ];
 
-const TABS = ['All', 'Pending', 'Confirmed', 'Completed', 'Declined'];
+const TABS = ['All', 'Pending', 'Confirmed', 'Completed', 'Declined', 'Cancelled'];
 
 export function ParentBookings() {
   const navigate = useNavigate();
@@ -33,6 +33,7 @@ export function ParentBookings() {
     if (activeTab === 'Confirmed') return b.status === 'accepted';
     if (activeTab === 'Completed') return b.status === 'completed';
     if (activeTab === 'Declined') return b.status === 'rejected';
+    if (activeTab === 'Cancelled') return b.status === 'cancelled';
     return true;
   });
 
@@ -70,6 +71,7 @@ export function ParentBookings() {
                     if (tab === 'Confirmed') return b.status === 'accepted';
                     if (tab === 'Completed') return b.status === 'completed';
                     if (tab === 'Declined') return b.status === 'rejected';
+                    if (tab === 'Cancelled') return b.status === 'cancelled';
                     return false;
                   }).length})
                 </span>
