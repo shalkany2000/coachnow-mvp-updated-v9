@@ -36,6 +36,16 @@ export function CoachBookings() {
     setActionError('');
     try {
       await updateBookingStatus(id, status);
+      if (status === 'accepted' || status === 'rejected') {
+        const booking = coachBookings.find((b) => b.id === id);
+        if (booking) {
+          fetch('/api/booking-status-update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ booking, status }),
+          }).catch((err) => console.warn('Status update email could not be sent:', err));
+        }
+      }
     } catch (err) {
       console.error('Failed to update booking:', err);
       setActionError("Couldn't update that booking — check your connection and try again.");

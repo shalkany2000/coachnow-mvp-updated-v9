@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /coach/
+Disallow: /parent/
+Disallow: /profile
+
+Sitemap: https://coachnow-mvp-updated-v9.vercel.app/sitemap.xml

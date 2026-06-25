@@ -32,6 +32,7 @@ import { CoachEarnings } from './pages/coach/CoachEarnings';
 
 // Admin Pages
 import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { AdminAnalytics } from './pages/admin/AdminAnalytics';
 import { AdminUsers } from './pages/admin/AdminUsers';
 import { AdminCoaches } from './pages/admin/AdminCoaches';
 import { AdminBookings } from './pages/admin/AdminBookings';
@@ -135,6 +136,11 @@ function App() {
               <Route path="/admin" element={
                 <ProtectedRoute role={['admin', 'gm']}>
                   <AdminDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/analytics" element={
+                <ProtectedRoute role={['admin', 'gm']}>
+                  <AdminAnalytics />
                 </ProtectedRoute>
               } />
               <Route path="/admin/users" element={

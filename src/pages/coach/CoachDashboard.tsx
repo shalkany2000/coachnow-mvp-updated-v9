@@ -172,11 +172,19 @@ export function CoachDashboard() {
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Verified</span>
+                  <span className="text-sm text-gray-600">Verification</span>
                   <Badge variant={coachProfile.verified ? 'green' : 'yellow'} size="sm">
-                    {coachProfile.verified ? '✓ Verified' : 'Pending'}
+                    {coachProfile.verified
+                      ? '✓ Verified'
+                      : `${Object.values(coachProfile.verificationChecklist || {}).filter(v => v === true).length}/3 steps`}
                   </Badge>
                 </div>
+                {!coachProfile.verified && (
+                  <p className="text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2">
+                    Send your ID and coaching certification to our team on WhatsApp to get your "Verified" badge —
+                    it helps parents trust you with their kids.
+                  </p>
+                )}
                 <Button variant="outline" size="sm" fullWidth onClick={() => navigate('/coach/profile-setup')} className="mt-2">
                   Edit Profile
                 </Button>

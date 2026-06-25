@@ -1,5 +1,6 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { captureError } from '../lib/monitoring';
 
 interface Props {
   children: ReactNode;
@@ -17,7 +18,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('CoachNow crashed:', error, info);
+    captureError(error, { componentStack: info.componentStack });
   }
 
   render() {

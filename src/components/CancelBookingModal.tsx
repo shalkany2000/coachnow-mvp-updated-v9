@@ -4,7 +4,7 @@ import { Booking, DayKey } from '../lib/mockData';
 import { useBookings } from '../contexts/BookingContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { useCoaches } from '../contexts/CoachContext';
-import { getCancellationOutcome } from '../lib/cancellation';
+import { getCancellationOutcome, resolveActualRefund } from '../lib/cancellation';
 import { generateSlots, formatTime } from '../utils/time';
 import { Button } from './ui/Button';
 
@@ -32,7 +32,8 @@ export function CancelBookingModal({ booking, onClose }: CancelBookingModalProps
   // there's nothing to refund if no money was ever collected.
   const totalPaid = booking.price + (booking.serviceFee || 0) + (booking.vatAmount || 0);
   const rawOutcome = getCancellationOutcome(booking.date, booking.time, totalPaid, settings);
-  const outcome = booking.paid ? rawOutcome : { ...rawOutcome, refundCreditAmount: 0, penaltyPercent: 0 };
+  const actual = resolveActualRefund(rawOutcome, booking.paid);
+  const outcome = { ...rawOutcome, refundCreditAmount: actual.refundCreditAmount, penaltyPercent: actual.penaltyPercent };
   const coach = getCoach(booking.coachId);
   const today = new Date().toISOString().split('T')[0];
 
@@ -117,7 +118,7 @@ export function CancelBookingModal({ booking, onClose }: CancelBookingModalProps
               ) : outcome.tier === 'full' ? (
                 <p>You're cancelling with plenty of notice — <strong>AED {outcome.refundCreditAmount} full credit</strong> will be added to your account.</p>
               ) : outcome.tier === 'partial' ? (
-                <p>This is within {settings.cancellationFullRefundHours}h of your session — you'll get <strong>AED {outcome.refundCreditAmount} credit</strong> ({rawOutcome.penaltyPercent}% forfeited).</p>
+                <p>This is within {settings.cancellationFullRefundHours}h of your session — you'll get <strong>AED {outcome.refundCreditAmount} credit</strong> ({outcome.penaltyPercent}% forfeited).</p>
               ) : (
                 <p>This is within {settings.cancellationPartialRefundHours}h of your session — <strong>no credit will be issued</strong> for this cancellation.</p>
               )}

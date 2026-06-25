@@ -6,7 +6,7 @@ import { useAuth } from './AuthContext';
 import { useInvoices } from './InvoiceContext';
 import { useSettings } from './SettingsContext';
 import { processReferralReward } from '../lib/referralActions';
-import { getCancellationOutcome, CancellationOutcome } from '../lib/cancellation';
+import { getCancellationOutcome, resolveActualRefund, CancellationOutcome } from '../lib/cancellation';
 
 interface BookingContextType {
   bookings: Booking[];
@@ -148,30 +148,23 @@ export function BookingProvider({ children }: { children: ReactNode }) {
     // their fee + VAT on every cancellation, full-refund tier or not.
     const totalPaid = booking.price + (booking.serviceFee || 0) + (booking.vatAmount || 0);
     const outcome = getCancellationOutcome(booking.date, booking.time, totalPaid, settings);
-
-    // Critical: only issue credit if money was actually collected for
-    // this booking. Payment happens manually via WhatsApp after a
-    // request is made, so most pending/accepted bookings are unpaid at
-    // the time of cancellation — without this check, anyone could
-    // repeatedly book then cancel and accumulate unlimited free credit
-    // for sessions they never paid a single dirham for.
-    const actualRefundCreditAmount = booking.paid ? outcome.refundCreditAmount : 0;
+    const actual = resolveActualRefund(outcome, booking.paid);
 
     await updateDoc(doc(db, COLLECTION, id), {
       status: 'cancelled',
       cancelledAt: new Date().toISOString(),
-      refundCreditAmount: actualRefundCreditAmount,
-      cancellationPenaltyPercent: booking.paid ? outcome.penaltyPercent : 0,
+      refundCreditAmount: actual.refundCreditAmount,
+      cancellationPenaltyPercent: actual.penaltyPercent,
     });
 
-    if (actualRefundCreditAmount > 0) {
+    if (actual.refundCreditAmount > 0) {
       const userRef = doc(db, 'users', booking.parentId);
       const userSnap = await getDoc(userRef);
       const currentCredit = userSnap.exists() ? (userSnap.data().creditBalance as number) || 0 : 0;
-      await updateDoc(userRef, { creditBalance: currentCredit + actualRefundCreditAmount });
+      await updateDoc(userRef, { creditBalance: currentCredit + actual.refundCreditAmount });
     }
 
-    return { ...outcome, refundCreditAmount: actualRefundCreditAmount };
+    return { ...outcome, refundCreditAmount: actual.refundCreditAmount };
   };
 
   const rescheduleBooking = async (id: string, newDate: string, newTime: string) => {

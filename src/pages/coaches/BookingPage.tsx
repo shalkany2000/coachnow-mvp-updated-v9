@@ -226,6 +226,25 @@ export function BookingPage() {
         await updateDoc(doc(db, 'users', currentUser.id), { creditBalance: creditAvailable - creditApplied });
       }
 
+      // Fire-and-forget — a confirmation email is a nice-to-have on top of
+      // the booking itself, so a hiccup here should never block or undo
+      // the actual booking that just succeeded.
+      fetch('/api/booking-confirmation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          booking: {
+            parentName: currentUser?.name,
+            parentEmail: currentUser?.email,
+            coachName: coach.name,
+            sportType: coach.sportType,
+            date,
+            time,
+            duration: coach.sessionDuration,
+          },
+        }),
+      }).catch((err) => console.warn('Booking confirmation email could not be sent:', err));
+
       setConfirmedSummary(summary);
       setSuccess(true);
     } catch (err) {

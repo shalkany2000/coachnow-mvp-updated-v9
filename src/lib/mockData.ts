@@ -38,6 +38,16 @@ export interface TimeBlock {
 export const DAY_KEYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 export type DayKey = typeof DAY_KEYS[number];
 
+// A real verification process instead of one blind toggle — "Verified"
+// publicly shown on a coach's profile now means all three of these were
+// actually checked off, not just an admin clicking a single button.
+export interface VerificationChecklist {
+  idVerified: boolean;
+  certificationVerified: boolean;
+  backgroundCheckCleared: boolean;
+  notes?: string; // private, admin-only record of what was checked and when
+}
+
 export interface Coach {
   id: string;
   userId: string;
@@ -66,6 +76,7 @@ export interface Coach {
   weeklySchedule?: Partial<Record<DayKey, TimeBlock[]>>;
   sessionDuration: number; // minutes
   verified: boolean;
+  verificationChecklist?: VerificationChecklist;
   onLeave?: boolean;
 }
 

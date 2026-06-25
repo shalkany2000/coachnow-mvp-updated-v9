@@ -60,3 +60,16 @@ export function getCancellationOutcome(
     canReschedule: false,
   };
 }
+
+// Critical: a booking only gets refund credit if it was actually paid for.
+// Payment happens manually via WhatsApp after a request is made, so most
+// pending/accepted bookings are unpaid at the time of cancellation —
+// without this check, anyone could repeatedly book then cancel and
+// accumulate unlimited free credit for sessions they never paid for.
+// Centralized here (rather than duplicated inline in both BookingContext
+// and CancelBookingModal) specifically so there's one tested place this
+// rule lives, not two places that could silently drift apart.
+export function resolveActualRefund(outcome: CancellationOutcome, wasPaid: boolean): { refundCreditAmount: number; penaltyPercent: number } {
+  if (!wasPaid) return { refundCreditAmount: 0, penaltyPercent: 0 };
+  return { refundCreditAmount: outcome.refundCreditAmount, penaltyPercent: outcome.penaltyPercent };
+}
