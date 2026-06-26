@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Dumbbell, Eye, EyeOff } from 'lucide-react';
 import { useAuth, friendlyAuthError } from '../../contexts/AuthContext';
+import { GoogleSignInButton } from '../../components/GoogleSignInButton';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 
@@ -125,6 +126,13 @@ export function LoginPage() {
               Sign In
             </Button>
           </form>
+
+          <div className="flex items-center gap-3 my-5">
+            <div className="flex-1 h-px bg-gray-100" />
+            <span className="text-xs text-gray-400 font-medium">OR</span>
+            <div className="flex-1 h-px bg-gray-100" />
+          </div>
+          <GoogleSignInButton />
 
           <p className="text-center text-sm text-gray-500 mt-6">
             Don't have an account?{' '}

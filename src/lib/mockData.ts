@@ -11,6 +11,11 @@ export interface User {
   pendingReferralDiscountPercent?: number; // unlocked reward, applied + cleared on their next booking
   creditBalance?: number; // AED credit from cancellations, usable toward any future booking
   homeAddress?: string; // parent's saved address, so the coach knows where to go for training
+  // Only ever explicitly false — present and false means this account was
+  // created via Google sign-in and still needs a phone number and a
+  // parent/coach choice before it's usable. Absent (the normal case for
+  // email/password signups, which always collect both upfront) means complete.
+  profileComplete?: boolean;
 }
 
 // Tracks a single referral relationship from signup through reward —

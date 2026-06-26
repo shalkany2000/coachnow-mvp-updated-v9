@@ -2,6 +2,8 @@ import { RefreshCw, WifiOff } from 'lucide-react';
 import { useCoaches } from '../contexts/CoachContext';
 import { useBookings } from '../contexts/BookingContext';
 import { useSettings } from '../contexts/SettingsContext';
+import { useAuth } from '../contexts/AuthContext';
+import { CompleteProfilePage } from '../pages/auth/CompleteProfilePage';
 
 // Coaches and bookings now live in Firestore instead of localStorage, which
 // means the very first load of each is genuinely asynchronous (a real
@@ -9,6 +11,7 @@ import { useSettings } from '../contexts/SettingsContext';
 // be. Without this gate, every page that reads coaches/bookings would
 // render with empty data for a moment before the real data arrives.
 export function AppDataGate({ children }: { children: React.ReactNode }) {
+  const { currentUser } = useAuth();
   const { loading: coachesLoading, error: coachesError } = useCoaches();
   const { loading: bookingsLoading, error: bookingsError } = useBookings();
   const { loading: settingsLoading, error: settingsError } = useSettings();
@@ -45,6 +48,13 @@ export function AppDataGate({ children }: { children: React.ReactNode }) {
         </div>
       </div>
     );
+  }
+
+  // A Google sign-in that hasn't provided a phone number and role yet —
+  // this takes over the entire screen regardless of which route they
+  // landed on, since there's no usable account until this is done.
+  if (currentUser?.profileComplete === false) {
+    return <CompleteProfilePage />;
   }
 
   return <>{children}</>;

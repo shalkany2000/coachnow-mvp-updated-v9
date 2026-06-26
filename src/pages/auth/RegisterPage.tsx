@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, User, Dumbbell, Eye, EyeOff, Users, Phone, Gift } from 'lucide-react';
 import { useAuth, friendlyAuthError } from '../../contexts/AuthContext';
+import { GoogleSignInButton } from '../../components/GoogleSignInButton';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 
@@ -85,6 +86,13 @@ export function RegisterPage() {
                 <p className="text-xs opacity-70">Offer sessions</p>
               </div>
             </button>
+          </div>
+
+          <GoogleSignInButton />
+          <div className="flex items-center gap-3 my-5">
+            <div className="flex-1 h-px bg-gray-100" />
+            <span className="text-xs text-gray-400 font-medium">OR SIGN UP WITH EMAIL</span>
+            <div className="flex-1 h-px bg-gray-100" />
           </div>
 
           <form onSubmit={handleRegister} className="space-y-5">

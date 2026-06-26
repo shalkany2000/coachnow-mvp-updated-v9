@@ -5,6 +5,9 @@ import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
   signOut,
+  signInWithRedirect,
+  getRedirectResult,
+  GoogleAuthProvider,
   User as FirebaseUser,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -17,6 +20,9 @@ interface AuthContextType {
   currentUser: User | null;
   login: (email: string, password: string) => Promise<User>;
   register: (name: string, email: string, phone: string, password: string, role: 'parent' | 'coach', referralCodeInput?: string) => Promise<User>;
+  signInWithGoogle: () => Promise<void>;
+  completeProfile: (phone: string, role: 'parent' | 'coach', referralCodeInput?: string) => Promise<User>;
+  googleSignInError: string;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   loading: boolean;
@@ -41,23 +47,43 @@ function defaultRoleForEmail(email: string): 'parent' | 'coach' | 'admin' {
   return 'parent';
 }
 
+function isKnownDemoEmail(email: string): boolean {
+  return mockUsers.some((u) => u.email.toLowerCase() === email.toLowerCase());
+}
+
+// Single place that creates a Firestore profile for ANY auth account that
+// doesn't have one yet — whether that's the result of a normal
+// email/password registration's first onAuthStateChanged firing, a demo
+// account's first-ever login, or (the new case) a brand new Google
+// sign-in. Consolidating this into one function avoids a race between
+// the auth listener and a separate Google-specific creation path each
+// trying to create the profile differently.
 async function loadOrCreateProfile(firebaseUser: FirebaseUser): Promise<User> {
   const ref = doc(db, 'users', firebaseUser.uid);
   const snap = await getDoc(ref);
   if (snap.exists()) {
     return snap.data() as User;
   }
+  const email = firebaseUser.email || '';
+  const knownDemo = isKnownDemoEmail(email);
   const fallbackName =
-    mockUsers.find(u => u.email.toLowerCase() === (firebaseUser.email || '').toLowerCase())?.name ||
-    firebaseUser.email?.split('@')[0] ||
+    mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase())?.name ||
+    firebaseUser.displayName ||
+    email.split('@')[0] ||
     'New User';
   const profile: User = {
     id: firebaseUser.uid,
     name: fallbackName,
-    email: firebaseUser.email || '',
+    email,
     phone: '',
-    role: defaultRoleForEmail(firebaseUser.email || ''),
+    role: defaultRoleForEmail(email),
     createdAt: new Date().toISOString(),
+    // Known demo accounts keep their existing behavior exactly as before
+    // (usable immediately). Any genuinely new account — which today only
+    // happens via Google sign-in, since email/password registration
+    // always collects phone + role before ever reaching this function —
+    // is explicitly marked incomplete until they provide both.
+    ...(knownDemo ? {} : { profileComplete: false, referralCode: generateReferralCode(fallbackName) }),
   };
   await setDoc(ref, profile);
   return profile;
@@ -90,6 +116,18 @@ export function friendlyAuthError(err: unknown): string {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [googleSignInError, setGoogleSignInError] = useState('');
+
+  useEffect(() => {
+    // Catches errors specific to the redirect flow itself (e.g. the user
+    // closed the Google account picker without choosing one). On success,
+    // onAuthStateChanged below fires on its own and handles loading/
+    // creating the profile — this is purely for surfacing failures.
+    getRedirectResult(auth).catch((err) => {
+      console.error('Google sign-in failed:', err);
+      setGoogleSignInError(friendlyAuthError(err));
+    });
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -108,6 +146,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     return () => unsubscribe();
   }, []);
+
+  const signInWithGoogle = async (): Promise<void> => {
+    setGoogleSignInError('');
+    const provider = new GoogleAuthProvider();
+    // Redirect rather than a popup — far more reliable across mobile
+    // browsers and in-app browsers (WhatsApp, Instagram, etc.), which
+    // often block or mishandle popups. The page navigates away to Google
+    // and back; onAuthStateChanged picks up the result automatically.
+    await signInWithRedirect(auth, provider);
+  };
+
+  // Fills in what Google sign-in can't provide on its own — a phone
+  // number (essential, since the whole booking flow runs through
+  // WhatsApp) and whether they're a parent or a coach. Until this runs,
+  // the account exists in Firebase Auth but profileComplete stays false,
+  // and the rest of the app treats that as "not really signed in yet."
+  const completeProfile = async (
+    phone: string,
+    role: 'parent' | 'coach',
+    referralCodeInput?: string
+  ): Promise<User> => {
+    if (!currentUser) throw new Error('No signed-in account to complete a profile for.');
+    const updated: User = { ...currentUser, phone, role, profileComplete: true };
+    await setDoc(doc(db, 'users', currentUser.id), updated);
+    setCurrentUser(updated);
+
+    if (referralCodeInput && referralCodeInput.trim()) {
+      try {
+        const referrer = await findReferrerByCode(referralCodeInput);
+        if (referrer && referrer.id !== updated.id) {
+          await setDoc(doc(db, 'users', updated.id), { referredBy: referrer.id }, { merge: true });
+          await createReferralRecord(referrer.id, referrer.name, updated.id, updated.name);
+        }
+      } catch (err) {
+        console.error('Failed to link referral:', err);
+      }
+    }
+
+    return updated;
+  };
 
   const login = async (email: string, password: string): Promise<User> => {
     const credential = await signInWithEmailAndPassword(auth, email, password);
@@ -168,7 +246,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ currentUser, login, register, logout, resetPassword, loading }}>
+    <AuthContext.Provider value={{ currentUser, login, register, signInWithGoogle, completeProfile, googleSignInError, logout, resetPassword, loading }}>
       {children}
     </AuthContext.Provider>
   );
