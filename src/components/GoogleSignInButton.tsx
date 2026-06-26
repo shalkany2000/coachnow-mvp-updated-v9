@@ -2,9 +2,16 @@ import { useAuth, friendlyAuthError } from '../contexts/AuthContext';
 import { useState } from 'react';
 
 export function GoogleSignInButton() {
-  const { signInWithGoogle } = useAuth();
+  const { signInWithGoogle, googleSignInError } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // googleSignInError comes from AuthContext's handling of the return trip
+  // from Google (getRedirectResult) — a real bug existed here before: that
+  // error was being caught and stored, but nothing ever displayed it, so a
+  // failure after picking a Google account looked exactly like "nothing
+  // happened, just back where I started."
+  const displayedError = error || googleSignInError;
 
   const handleClick = async () => {
     setLoading(true);
@@ -36,7 +43,7 @@ export function GoogleSignInButton() {
         </svg>
         {loading ? 'Redirecting to Google...' : 'Continue with Google'}
       </button>
-      {error && <p className="text-xs text-red-600 font-medium mt-2 text-center">{error}</p>}
+      {displayedError && <p className="text-xs text-red-600 font-medium mt-2 text-center">{displayedError}</p>}
     </div>
   );
 }
