@@ -5,8 +5,7 @@ import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
   signOut,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   GoogleAuthProvider,
   User as FirebaseUser,
 } from 'firebase/auth';
@@ -22,7 +21,6 @@ interface AuthContextType {
   register: (name: string, email: string, phone: string, password: string, role: 'parent' | 'coach', referralCodeInput?: string) => Promise<User>;
   signInWithGoogle: () => Promise<void>;
   completeProfile: (phone: string, role: 'parent' | 'coach', referralCodeInput?: string) => Promise<User>;
-  googleSignInError: string;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   loading: boolean;
@@ -115,6 +113,8 @@ export function friendlyAuthError(err: unknown): string {
     case 'auth/popup-closed-by-user':
     case 'auth/cancelled-popup-request':
       return 'Sign-in was cancelled before it finished.';
+    case 'auth/popup-blocked':
+      return 'Your browser blocked the Google sign-in popup — please allow popups for this site and try again.';
     default:
       return `Something went wrong. Please try again. (${code || 'unknown error'})`;
   }
@@ -123,18 +123,6 @@ export function friendlyAuthError(err: unknown): string {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [googleSignInError, setGoogleSignInError] = useState('');
-
-  useEffect(() => {
-    // Catches errors specific to the redirect flow itself (e.g. the user
-    // closed the Google account picker without choosing one). On success,
-    // onAuthStateChanged below fires on its own and handles loading/
-    // creating the profile — this is purely for surfacing failures.
-    getRedirectResult(auth).catch((err) => {
-      console.error('Google sign-in failed:', err);
-      setGoogleSignInError(friendlyAuthError(err));
-    });
-  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -154,14 +142,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
+  // signInWithRedirect was tried first, but it relies on cross-domain
+  // storage access between this app's domain and the authDomain
+  // (coachnow-725fb.firebaseapp.com) — Firebase's own documentation
+  // confirms this silently fails (no error, no result) on browsers that
+  // block third-party storage access, which is increasingly common on
+  // mobile. signInWithPopup avoids that entirely: the result (or any
+  // error) comes back directly from this same function call, in the same
+  // tab, with no cross-domain redirect involved.
   const signInWithGoogle = async (): Promise<void> => {
-    setGoogleSignInError('');
     const provider = new GoogleAuthProvider();
-    // Redirect rather than a popup — far more reliable across mobile
-    // browsers and in-app browsers (WhatsApp, Instagram, etc.), which
-    // often block or mishandle popups. The page navigates away to Google
-    // and back; onAuthStateChanged picks up the result automatically.
-    await signInWithRedirect(auth, provider);
+    await signInWithPopup(auth, provider);
+    // onAuthStateChanged above fires from this and handles loading/
+    // creating the profile, same as every other sign-in method.
   };
 
   // Fills in what Google sign-in can't provide on its own — a phone
@@ -253,7 +246,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ currentUser, login, register, signInWithGoogle, completeProfile, googleSignInError, logout, resetPassword, loading }}>
+    <AuthContext.Provider value={{ currentUser, login, register, signInWithGoogle, completeProfile, logout, resetPassword, loading }}>
       {children}
     </AuthContext.Provider>
   );

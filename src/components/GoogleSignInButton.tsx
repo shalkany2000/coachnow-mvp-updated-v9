@@ -2,27 +2,22 @@ import { useAuth, friendlyAuthError } from '../contexts/AuthContext';
 import { useState } from 'react';
 
 export function GoogleSignInButton() {
-  const { signInWithGoogle, googleSignInError } = useAuth();
+  const { signInWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  // googleSignInError comes from AuthContext's handling of the return trip
-  // from Google (getRedirectResult) — a real bug existed here before: that
-  // error was being caught and stored, but nothing ever displayed it, so a
-  // failure after picking a Google account looked exactly like "nothing
-  // happened, just back where I started."
-  const displayedError = error || googleSignInError;
 
   const handleClick = async () => {
     setLoading(true);
     setError('');
     try {
       await signInWithGoogle();
-      // Page navigates away to Google here — nothing else to do until
-      // it redirects back.
+      // A popup, not a redirect — this resolves directly once the user
+      // picks an account, no page reload involved. onAuthStateChanged in
+      // AuthContext picks up the result from here.
     } catch (err) {
       console.error('Google sign-in failed:', err);
       setError(friendlyAuthError(err));
+    } finally {
       setLoading(false);
     }
   };
@@ -41,9 +36,9 @@ export function GoogleSignInButton() {
           <path fill="#4CAF50" d="M24 45c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 36.4 26.7 37 24 37c-5.2 0-9.6-3.3-11.3-7.9l-6.6 5C9.4 41.6 16.1 45 24 45Z" />
           <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6.2 5.2C40.9 35.9 44 30.7 44 24c0-1.2-.1-2.4-.4-3.5Z" />
         </svg>
-        {loading ? 'Redirecting to Google...' : 'Continue with Google'}
+        {loading ? 'Opening Google sign-in...' : 'Continue with Google'}
       </button>
-      {displayedError && <p className="text-xs text-red-600 font-medium mt-2 text-center">{displayedError}</p>}
+      {error && <p className="text-xs text-red-600 font-medium mt-2 text-center">{error}</p>}
     </div>
   );
 }
