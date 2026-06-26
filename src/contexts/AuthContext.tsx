@@ -108,8 +108,15 @@ export function friendlyAuthError(err: unknown): string {
       return 'Too many attempts — please wait a moment and try again.';
     case 'auth/network-request-failed':
       return 'Network error — check your connection and try again.';
+    case 'auth/operation-not-allowed':
+      return 'Google sign-in isn\'t turned on yet for this app — an admin needs to enable it in Firebase Console under Authentication > Sign-in method.';
+    case 'auth/unauthorized-domain':
+      return 'This website isn\'t yet authorized for Google sign-in — an admin needs to add this domain in Firebase Console under Authentication > Settings > Authorized domains.';
+    case 'auth/popup-closed-by-user':
+    case 'auth/cancelled-popup-request':
+      return 'Sign-in was cancelled before it finished.';
     default:
-      return 'Something went wrong. Please try again.';
+      return `Something went wrong. Please try again. (${code || 'unknown error'})`;
   }
 }
 
