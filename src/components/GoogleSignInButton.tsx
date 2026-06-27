@@ -1,8 +1,10 @@
 import { useAuth, friendlyAuthError } from '../contexts/AuthContext';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export function GoogleSignInButton() {
   const { signInWithGoogle } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -10,10 +12,15 @@ export function GoogleSignInButton() {
     setLoading(true);
     setError('');
     try {
-      await signInWithGoogle();
-      // A popup, not a redirect — this resolves directly once the user
-      // picks an account, no page reload involved. onAuthStateChanged in
-      // AuthContext picks up the result from here.
+      const profile = await signInWithGoogle();
+      // A brand new sign-in (profileComplete === false) needs no
+      // navigation here — AppDataGate takes over the whole screen with
+      // the completion form regardless of route. A returning user with
+      // an already-complete profile needs to be actively sent to their
+      // dashboard, since nothing else does that for them.
+      if (profile.profileComplete !== false) {
+        navigate(profile.role === 'coach' ? '/coach/dashboard' : profile.role === 'admin' || profile.role === 'gm' ? '/admin' : '/parent/home');
+      }
     } catch (err) {
       console.error('Google sign-in failed:', err);
       setError(friendlyAuthError(err));

@@ -19,7 +19,7 @@ interface AuthContextType {
   currentUser: User | null;
   login: (email: string, password: string) => Promise<User>;
   register: (name: string, email: string, phone: string, password: string, role: 'parent' | 'coach', referralCodeInput?: string) => Promise<User>;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: () => Promise<User>;
   completeProfile: (phone: string, role: 'parent' | 'coach', referralCodeInput?: string) => Promise<User>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
@@ -150,11 +150,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // mobile. signInWithPopup avoids that entirely: the result (or any
   // error) comes back directly from this same function call, in the same
   // tab, with no cross-domain redirect involved.
-  const signInWithGoogle = async (): Promise<void> => {
+  const signInWithGoogle = async (): Promise<User> => {
     const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
-    // onAuthStateChanged above fires from this and handles loading/
-    // creating the profile, same as every other sign-in method.
+    const credential = await signInWithPopup(auth, provider);
+    // Load/create the profile directly here, the same way login() and
+    // register() already do — rather than relying on the separate
+    // onAuthStateChanged listener to eventually catch up. This matters
+    // because the calling code (the Google button) needs to know the
+    // actual result immediately, to decide whether to navigate a
+    // returning user straight to their dashboard. Without this, a
+    // returning user with an already-complete profile would sign in
+    // successfully in the background with nothing ever taking them
+    // anywhere — exactly the bug that was happening.
+    const profile = await loadOrCreateProfile(credential.user);
+    setCurrentUser(profile);
+    return profile;
   };
 
   // Fills in what Google sign-in can't provide on its own — a phone
