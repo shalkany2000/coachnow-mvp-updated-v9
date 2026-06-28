@@ -63,7 +63,7 @@ export function CoachBookings() {
   });
 
   return (
-    <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Coach Dashboard">
+    <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Academy Dashboard">
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-black text-gray-900">Booking Requests</h1>

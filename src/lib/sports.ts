@@ -1,10 +1,11 @@
 import { Coach } from './mockData';
 
-// These two sports always show real bookable coaches. Every other sport
-// only goes live once an actual coach registers under it for real — until
-// then, the demo/starter profiles for that sport are hidden from public
-// view rather than presenting fake coaches to real customers.
-export const ALWAYS_ACTIVE_SPORTS = ['Swimming', 'Fitness'];
+// All 6 launch sports are active immediately — academies are onboarded
+// directly by the business, not grown organically from a starter catalog
+// the way individual freelance coaches once were. The gating mechanism
+// below still exists for if a 7th sport is ever added before any real
+// academy has joined under it.
+export const ALWAYS_ACTIVE_SPORTS = ['Swimming', 'Football', 'Gym', 'Tennis', 'Basketball', 'Padel'];
 
 const SEED_COACH_IDS = new Set([
   'coach1', 'coach2', 'coach3', 'coach4', 'coach5', 'coach6', 'coach7', 'coach8',

@@ -13,7 +13,7 @@ import { useAdminSidebarItems } from '../../hooks/useAdminSidebarItems';
 
 const roleConfig = {
   parent: { label: 'Parent', variant: 'blue' as const },
-  coach: { label: 'Coach', variant: 'green' as const },
+  coach: { label: 'Academy', variant: 'green' as const },
   admin: { label: 'Admin', variant: 'purple' as const },
   gm: { label: 'GM', variant: 'yellow' as const },
 };
@@ -76,7 +76,7 @@ export function AdminUsers() {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-black text-gray-900">Users</h1>
-          <p className="text-gray-500 mt-1">{allUsers.length} registered users · {parents} parents · {coachCount} coaches</p>
+          <p className="text-gray-500 mt-1">{allUsers.length} registered users · {parents} parents · {coachCount} academies</p>
         </div>
 
         {/* Stats */}
@@ -84,7 +84,7 @@ export function AdminUsers() {
           {[
             { label: 'Total Users', value: allUsers.length, color: 'blue' },
             { label: 'Parents', value: parents, color: 'green' },
-            { label: 'Coaches', value: coachCount, color: 'purple' },
+            { label: 'Academies', value: coachCount, color: 'purple' },
           ].map(stat => (
             <Card key={stat.label} padding="sm" className="text-center">
               <p className={`text-2xl font-black ${stat.color === 'blue' ? 'text-blue-600' : stat.color === 'green' ? 'text-green-600' : 'text-purple-600'}`}>{stat.value}</p>

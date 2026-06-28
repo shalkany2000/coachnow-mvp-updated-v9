@@ -11,8 +11,8 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 
 const roleConfig = {
-  parent: { label: 'Parent', variant: 'blue' as const, desc: 'Finding coaches for your family' },
-  coach: { label: 'Coach', variant: 'green' as const, desc: 'Providing training sessions' },
+  parent: { label: 'Parent', variant: 'blue' as const, desc: 'Finding academies for your family' },
+  coach: { label: 'Academy', variant: 'green' as const, desc: 'Listing your facility & programs' },
   admin: { label: 'Administrator', variant: 'purple' as const, desc: 'Managing the platform' },
   gm: { label: 'General Manager', variant: 'yellow' as const, desc: 'Managing platform operations' },
 };
@@ -131,7 +131,7 @@ export function ProfilePage() {
                 <h3 className="font-bold text-gray-900 text-sm">Home Address</h3>
               </div>
               <p className="text-xs text-gray-500">
-                Saved here once, then pre-filled every time you book — so your coach always knows where to go.
+                Saved here once, then pre-filled every time you book — so your academy always knows where to go.
                 For the most accurate directions, open Google Maps, find your location, tap <strong>Share</strong>,
                 then <strong>Copy link</strong> and paste it here. A typed address works too.
               </p>
@@ -145,7 +145,7 @@ export function ProfilePage() {
               {isMapLink(address) && (
                 <p className="text-xs text-emerald-600 font-medium flex items-center gap-1">
                   <CheckCircle className="w-3.5 h-3.5" />
-                  Maps link detected — your coach will see your exact pin.
+                  Maps link detected — your academy will see your exact pin.
                 </p>
               )}
               {addressError && (
@@ -167,7 +167,7 @@ export function ProfilePage() {
           )}
 
           <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
-            <p className="text-sm text-blue-800 font-medium">CoachNow — Dubai's sports coaching marketplace 🇦🇪</p>
+            <p className="text-sm text-blue-800 font-medium">CoachNow — Dubai's academies, gyms & sports facilities marketplace 🇦🇪</p>
           </div>
         </div>
 

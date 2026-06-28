@@ -56,7 +56,7 @@ export function Navbar() {
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6">
             <Link to="/coaches" className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">
-              Find Coaches
+              Find Academies
             </Link>
             <Link to="/#how-it-works" className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">
               How it Works
@@ -158,7 +158,7 @@ export function Navbar() {
       {menuOpen && (
         <div className="md:hidden border-t border-gray-100 bg-white px-4 py-4 space-y-3">
           <Link to="/coaches" className="block text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>
-            Find Coaches
+            Find Academies
           </Link>
           {currentUser ? (
             <>

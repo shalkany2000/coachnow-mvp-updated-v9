@@ -11,7 +11,7 @@ import { Button } from '../../components/ui/Button';
 
 const sidebarItems = [
   { label: 'Home', path: '/parent/home', icon: <Home className="w-full h-full" /> },
-  { label: 'Find Coaches', path: '/coaches', icon: <Search className="w-full h-full" /> },
+  { label: 'Find Academies', path: '/coaches', icon: <Search className="w-full h-full" /> },
   { label: 'My Bookings', path: '/parent/bookings', icon: <BookOpen className="w-full h-full" /> },
 ];
 
@@ -90,7 +90,7 @@ export function ParentBookings() {
                 ? "You haven't made any bookings yet."
                 : `No ${activeTab.toLowerCase()} bookings.`}
             </p>
-            <Button onClick={() => navigate('/coaches')}>Find a Coach</Button>
+            <Button onClick={() => navigate('/coaches')}>Find an Academy</Button>
           </div>
         ) : (
           <div className="grid gap-4">

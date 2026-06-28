@@ -208,12 +208,12 @@ export function CoachProfileSetup() {
   };
 
   return (
-    <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Coach Dashboard">
+    <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Academy Dashboard">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-black text-gray-900">My Profile</h1>
-            <p className="text-gray-500 mt-1">Set up your coach profile to attract clients</p>
+            <p className="text-gray-500 mt-1">Set up your academy profile to attract clients</p>
           </div>
           <Button onClick={handleSave} loading={loading} variant={saved ? 'secondary' : 'primary'}>
             {saved ? <><CheckCircle className="w-4 h-4" /> Saved!</> : <><Save className="w-4 h-4" /> Save Profile</>}
@@ -242,17 +242,17 @@ export function CoachProfileSetup() {
               <h2 className="font-bold text-gray-900 mb-4">Basic Information</h2>
               <div className="space-y-4">
                 <Input
-                  label="Full Name"
+                  label="Academy / Gym Name"
                   value={form.name}
                   onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-                  placeholder="Your full name"
+                  placeholder="e.g. Dubai Aqua Academy"
                 />
                 <div>
                   <label className="text-sm font-medium text-gray-700 block mb-1.5">Bio</label>
                   <textarea
                     value={form.bio}
                     onChange={e => setForm(p => ({ ...p, bio: e.target.value }))}
-                    placeholder="Describe your coaching experience, qualifications, and what makes your sessions special..."
+                    placeholder="Describe your facility, programs, and what makes your academy special..."
                     rows={5}
                     className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all resize-none"
                   />
@@ -275,7 +275,7 @@ export function CoachProfileSetup() {
 
             {/* Coaching Details */}
             <Card>
-              <h2 className="font-bold text-gray-900 mb-4">Coaching Details</h2>
+              <h2 className="font-bold text-gray-900 mb-4">Academy Details</h2>
               <div className="grid sm:grid-cols-2 gap-4">
                 <Select
                   label="Sport / Specialty"
@@ -299,10 +299,10 @@ export function CoachProfileSetup() {
                   placeholder="e.g. 250"
                 />
                 <Input
-                  label="Years of Experience"
+                  label="Established Since"
                   value={form.experience}
                   onChange={e => setForm(p => ({ ...p, experience: e.target.value }))}
-                  placeholder="e.g. 5 years"
+                  placeholder="e.g. Est. 2018"
                 />
                 <Select
                   label="Session Duration"
@@ -403,10 +403,9 @@ export function CoachProfileSetup() {
             <Card className={form.onLeave ? 'border-2 border-amber-300 bg-amber-50' : ''}>
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h2 className="font-bold text-gray-900">Taking a break?</h2>
+                  <h2 className="font-bold text-gray-900">Temporarily closed?</h2>
                   <p className="text-sm text-gray-500 mt-1">
-                    Turn this on while you're away — your profile is hidden from new bookings until you turn it back off.
-                    Existing bookings aren't affected.
+                    Turn this on for renovations, holidays, or any closure — your profile is hidden from new bookings until you turn it back off. Existing bookings aren't affected.
                   </p>
                 </div>
                 <button
@@ -427,7 +426,7 @@ export function CoachProfileSetup() {
               </div>
               {form.onLeave && (
                 <p className="text-sm font-semibold text-amber-700 mt-3">
-                  🌴 You're currently set as on leave — clients can't book you right now.
+                  🚧 You're currently set as temporarily closed — clients can't book you right now.
                 </p>
               )}
             </Card>
@@ -460,11 +459,11 @@ export function CoachProfileSetup() {
               <h3 className="font-bold text-gray-900 mb-4">Profile Preview</h3>
               <div className="text-center mb-4">
                 <img
-                  src={form.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(form.name || 'Coach')}&background=dbeafe&color=1d4ed8&size=100`}
+                  src={form.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(form.name || 'Academy')}&background=dbeafe&color=1d4ed8&size=100`}
                   alt="Profile"
                   className="w-20 h-20 rounded-2xl object-cover mx-auto mb-3 shadow-sm"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(form.name || 'Coach')}&background=dbeafe&color=1d4ed8&size=100`;
+                    (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(form.name || 'Academy')}&background=dbeafe&color=1d4ed8&size=100`;
                   }}
                 />
                 <h4 className="font-bold text-gray-900">{form.name || 'Your Name'}</h4>

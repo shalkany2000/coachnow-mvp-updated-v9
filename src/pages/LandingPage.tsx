@@ -12,24 +12,25 @@ import { AnnouncementBanner } from '../components/AnnouncementBanner';
 
 const SPORT_ICONS: Record<string, string> = {
   Swimming: '🏊',
-  Fitness: '💪',
+  Football: '⚽',
+  Gym: '💪',
   Tennis: '🎾',
+  Basketball: '🏀',
   Padel: '🏓',
-  Badminton: '🏸',
 };
 
 const stats = [
-  { value: '200+', label: 'Expert Coaches', icon: <Users className="w-5 h-5" /> },
+  { value: '50+', label: 'Academies & Gyms', icon: <Users className="w-5 h-5" /> },
   { value: '4.8★', label: 'Average Rating', icon: <Star className="w-5 h-5" /> },
   { value: '1,500+', label: 'Sessions Booked', icon: <Award className="w-5 h-5" /> },
-  { value: '15+', label: 'Sports Covered', icon: <Zap className="w-5 h-5" /> },
+  { value: '6', label: 'Sports Covered', icon: <Zap className="w-5 h-5" /> },
 ];
 
 const howItWorks = [
   {
     step: '01',
-    title: 'Browse Coaches',
-    desc: 'Search and filter top-rated coaches by sport, location, and price in Dubai.',
+    title: 'Browse Academies',
+    desc: 'Search and filter top academies and gyms by sport, location, and price in Dubai.',
     icon: <Search className="w-6 h-6" />,
   },
   {
@@ -41,7 +42,7 @@ const howItWorks = [
   {
     step: '03',
     title: 'Train & Improve',
-    desc: 'Your coach confirms the session. Show up, train hard and reach your goals.',
+    desc: 'The academy confirms your booking. Show up, train hard and reach your goals.',
     icon: <Dumbbell className="w-6 h-6" />,
   },
 ];
@@ -82,13 +83,13 @@ export function LandingPage() {
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight tracking-tight mb-6">
             Find Your Perfect
             <br />
-            <span className="text-yellow-300">Sports Coach</span>
+            <span className="text-yellow-300">Academy or Gym</span>
             <br />
             in Dubai
           </h1>
           <p className="text-lg sm:text-xl text-blue-100 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Connect with expert coaches for swimming, fitness, tennis, padel and badminton.
-            Book sessions online in minutes.
+            Connect with top academies and gyms for swimming, football, gym, tennis, basketball and padel.
+            Book sessions or rent a facility online in minutes.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
@@ -97,7 +98,7 @@ export function LandingPage() {
               onClick={() => navigate('/coaches')}
             >
               <Search className="w-5 h-5" />
-              Find a Coach
+              Find an Academy
             </Button>
             <Button
               size="lg"
@@ -105,7 +106,7 @@ export function LandingPage() {
               className="border-white/50 text-white hover:bg-white/10 font-bold"
               onClick={() => navigate('/register')}
             >
-              Become a Coach
+              List Your Academy
               <ChevronRight className="w-5 h-5" />
             </Button>
           </div>
@@ -178,12 +179,12 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Featured Coaches */}
+      {/* Featured Academies */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Top Coaches in Dubai</h2>
-            <p className="text-gray-500 mt-1">Verified coaches with proven track records</p>
+            <h2 className="text-2xl font-bold text-gray-900">Top Academies in Dubai</h2>
+            <p className="text-gray-500 mt-1">Verified academies with proven track records</p>
           </div>
           <Button variant="outline" size="sm" onClick={() => navigate('/coaches')}>
             View All <ChevronRight className="w-4 h-4" />
@@ -228,7 +229,7 @@ export function LandingPage() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid md:grid-cols-3 gap-6">
           {[
-            { icon: <Shield className="w-6 h-6" />, title: 'Verified Coaches', desc: 'Every coach is background-checked and credentials-verified before joining.' },
+            { icon: <Shield className="w-6 h-6" />, title: 'Verified Academies', desc: 'Every academy is vetted and credentials-checked before joining the platform.' },
             { icon: <Star className="w-6 h-6" />, title: 'Reviewed & Rated', desc: 'Real reviews from parents who have booked sessions. 100% transparent.' },
             { icon: <Zap className="w-6 h-6" />, title: 'Instant Booking', desc: 'Book a session in under 2 minutes. No back-and-forth emails needed.' },
           ].map(item => (
@@ -249,7 +250,7 @@ export function LandingPage() {
       <section className="bg-blue-600 py-20">
         <div className="max-w-4xl mx-auto px-4 text-center text-white">
           <h2 className="text-3xl sm:text-4xl font-black mb-4">Ready to Start Training?</h2>
-          <p className="text-blue-100 text-lg mb-8">Join thousands of families finding the best coaches in Dubai.</p>
+          <p className="text-blue-100 text-lg mb-8">Join thousands of families finding the best academies and gyms in Dubai.</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
               size="lg"
@@ -264,7 +265,7 @@ export function LandingPage() {
               className="border-white/50 text-white hover:bg-white/10 font-bold"
               onClick={() => navigate('/coaches')}
             >
-              Browse Coaches
+              Browse Academies
             </Button>
           </div>
         </div>
@@ -281,8 +282,8 @@ export function LandingPage() {
               <span className="font-bold text-white text-lg">CoachNow</span>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm">
-              <Link to="/coaches" className="hover:text-white transition-colors">Find Coaches</Link>
-              <Link to="/register" className="hover:text-white transition-colors">Become a Coach</Link>
+              <Link to="/coaches" className="hover:text-white transition-colors">Find Academies</Link>
+              <Link to="/register" className="hover:text-white transition-colors">List Your Academy</Link>
               <a href="mailto:hello@coachnow.ae" className="hover:text-white transition-colors">Contact</a>
               <a
                 href={buildAdminWhatsAppLink('Hi, I have a suggestion/complaint about CoachNow:')}

@@ -33,8 +33,8 @@ export function CoachProfilePage() {
         <Navbar />
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Coach not found</h2>
-            <Button onClick={() => navigate('/coaches')}>Back to Coaches</Button>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Academy not found</h2>
+            <Button onClick={() => navigate('/coaches')}>Back to Academies</Button>
           </div>
         </div>
       </div>
@@ -71,7 +71,7 @@ export function CoachProfilePage() {
           className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-6 group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          Back to Coaches
+          Back to Academies
         </button>
 
         <div className="grid lg:grid-cols-3 gap-6">
@@ -107,14 +107,14 @@ export function CoachProfilePage() {
                           <Badge variant="blue" size="md">✓ Verified</Badge>
                         )}
                         {coach.onLeave && (
-                          <Badge variant="yellow" size="md">🌴 On Leave</Badge>
+                          <Badge variant="yellow" size="md">🚧 Temporarily Closed</Badge>
                         )}
                       </div>
                     </div>
                     <button
                       onClick={handleShare}
                       className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors relative"
-                      aria-label="Share this coach's profile"
+                      aria-label="Share this academy's profile"
                     >
                       <Share2 className="w-5 h-5" />
                       {copied && (
@@ -138,7 +138,7 @@ export function CoachProfilePage() {
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Clock className="w-4 h-4 text-gray-400" />
-                      <span>{coach.experience} experience</span>
+                      <span>{coach.experience}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <MapPin className="w-4 h-4 text-gray-400" />

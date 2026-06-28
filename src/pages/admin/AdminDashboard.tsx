@@ -89,7 +89,7 @@ export function AdminDashboard() {
                 <span className="font-black text-lg">AED {totalCommission}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-blue-100 text-sm">Coach Payouts</span>
+                <span className="text-blue-100 text-sm">Academy Payouts</span>
                 <span className="font-black text-lg">AED {totalRevenue - totalCommission}</span>
               </div>
               <div className="border-t border-white/20 pt-3 flex justify-between items-center">
@@ -176,7 +176,7 @@ export function AdminDashboard() {
                   <thead>
                     <tr className="text-left border-b border-gray-100">
                       <th className="pb-3 text-xs font-semibold text-gray-400">Parent</th>
-                      <th className="pb-3 text-xs font-semibold text-gray-400">Coach</th>
+                      <th className="pb-3 text-xs font-semibold text-gray-400">Academy</th>
                       <th className="pb-3 text-xs font-semibold text-gray-400">Sport</th>
                       <th className="pb-3 text-xs font-semibold text-gray-400">Date</th>
                       <th className="pb-3 text-xs font-semibold text-gray-400 text-right">Price</th>

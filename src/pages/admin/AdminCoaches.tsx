@@ -39,7 +39,7 @@ export function AdminCoaches() {
       await updateCoach(coach.id, { verificationChecklist: next, verified });
     } catch (err) {
       console.error('Failed to update coach verification:', err);
-      setActionError("Couldn't update that coach — check your connection and try again.");
+      setActionError("Couldn't update that academy — check your connection and try again.");
     }
   };
 
@@ -56,14 +56,14 @@ export function AdminCoaches() {
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle={sidebarTitle}>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-black text-gray-900">Coaches</h1>
-          <p className="text-gray-500 mt-1">{coaches.length} total coaches · {verified} verified</p>
+          <h1 className="text-2xl font-black text-gray-900">Academies</h1>
+          <p className="text-gray-500 mt-1">{coaches.length} total academies · {verified} verified</p>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
           {[
-            { label: 'Total Coaches', value: coaches.length, color: 'blue' },
+            { label: 'Total Academies', value: coaches.length, color: 'blue' },
             { label: 'Verified', value: verified, color: 'green' },
             { label: 'Pending Verification', value: coaches.length - verified, color: 'yellow' },
           ].map(stat => (
@@ -146,8 +146,8 @@ export function AdminCoaches() {
               {expandedId === coach.id && (
                 <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
                   {([
-                    ['idVerified', 'ID document checked'],
-                    ['certificationVerified', 'Coaching certification checked'],
+                    ['idVerified', 'Trade license checked'],
+                    ['certificationVerified', 'Certifications checked'],
                     ['backgroundCheckCleared', 'Background check cleared'],
                   ] as const).map(([field, label]) => {
                     const checked = (coach.verificationChecklist || DEFAULT_CHECKLIST)[field];
@@ -167,7 +167,7 @@ export function AdminCoaches() {
                     );
                   })}
                   <p className="text-xs text-gray-400 pt-1">
-                    Verification happens offline (coach sends ID/certs via WhatsApp) — check each item off here once you've actually reviewed it.
+                    Verification happens offline (academy sends license/certs via WhatsApp) — check each item off here once you've actually reviewed it.
                     "Verified" only shows on their public profile once all three are checked.
                   </p>
                 </div>

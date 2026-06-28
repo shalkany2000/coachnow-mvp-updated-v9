@@ -7,7 +7,7 @@ export function useAdminSidebarItems() {
     { label: 'Overview', path: '/admin', icon: <LayoutDashboard className="w-full h-full" /> },
     { label: 'Analytics', path: '/admin/analytics', icon: <BarChart3 className="w-full h-full" /> },
     { label: 'Users', path: '/admin/users', icon: <Users className="w-full h-full" /> },
-    { label: 'Coaches', path: '/admin/coaches', icon: <User className="w-full h-full" /> },
+    { label: 'Academies', path: '/admin/coaches', icon: <User className="w-full h-full" /> },
     { label: 'Bookings', path: '/admin/bookings', icon: <BookOpen className="w-full h-full" /> },
   ];
   // Settings (commission rate, etc.) is for the actual admin only — a GM

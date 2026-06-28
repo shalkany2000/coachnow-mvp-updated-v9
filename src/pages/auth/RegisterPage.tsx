@@ -19,15 +19,17 @@ export function RegisterPage() {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !phone || !password) { setError('Please fill in all fields.'); return; }
     if (phone.replace(/\D/g, '').length < 8) { setError('Please enter a valid phone number.'); return; }
     if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+    if (role === 'coach' && !termsAccepted) { setError('Please read and accept the Academy & Gym Partner Terms to continue.'); return; }
     setLoading(true); setError('');
     try {
-      await register(name, email, phone, password, role, referralCode);
+      await register(name, email, phone, password, role, referralCode, termsAccepted);
       if (role === 'coach') navigate('/coach/profile-setup');
       else navigate('/parent/home');
     } catch (err) {
@@ -68,7 +70,7 @@ export function RegisterPage() {
               <Users className="w-6 h-6" />
               <div>
                 <p className="font-bold text-sm">Parent</p>
-                <p className="text-xs opacity-70">Find coaches</p>
+                <p className="text-xs opacity-70">Find academies</p>
               </div>
             </button>
             <button
@@ -82,8 +84,8 @@ export function RegisterPage() {
             >
               <Dumbbell className="w-6 h-6" />
               <div>
-                <p className="font-bold text-sm">Coach</p>
-                <p className="text-xs opacity-70">Offer sessions</p>
+                <p className="font-bold text-sm">Academy</p>
+                <p className="text-xs opacity-70">List your academy</p>
               </div>
             </button>
           </div>
@@ -159,15 +161,31 @@ export function RegisterPage() {
             </div>
 
             {role === 'coach' && (
-              <div className="bg-yellow-50 rounded-xl p-3 border border-yellow-100">
-                <p className="text-xs text-yellow-800 font-medium">
-                  🎯 After registering, you'll set up your coach profile with your sport, pricing and availability.
-                </p>
-              </div>
+              <>
+                <div className="bg-yellow-50 rounded-xl p-3 border border-yellow-100">
+                  <p className="text-xs text-yellow-800 font-medium">
+                    🎯 After registering, you'll set up your academy profile with your sport, pricing and availability.
+                  </p>
+                </div>
+                <label className="flex items-start gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={termsAccepted}
+                    onChange={(e) => setTermsAccepted(e.target.checked)}
+                    className="mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-xs text-gray-600">
+                    I've read and agree to the{' '}
+                    <Link to="/academy-terms" target="_blank" className="text-blue-600 font-semibold hover:underline">
+                      Academy & Gym Partner Terms
+                    </Link>
+                  </span>
+                </label>
+              </>
             )}
 
             <Button type="submit" fullWidth size="lg" loading={loading}>
-              {role === 'parent' ? 'Find a Coach' : 'Start Coaching'}
+              {role === 'parent' ? 'Find an Academy' : 'List My Academy'}
             </Button>
           </form>
 

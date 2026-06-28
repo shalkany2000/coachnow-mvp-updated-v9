@@ -16,7 +16,7 @@ import {
 
 const sidebarItems = [
   { label: 'Home', path: '/parent/home', icon: <Home className="w-full h-full" /> },
-  { label: 'Find Coaches', path: '/coaches', icon: <Search className="w-full h-full" /> },
+  { label: 'Find Academies', path: '/coaches', icon: <Search className="w-full h-full" /> },
   { label: 'My Bookings', path: '/parent/bookings', icon: <BookOpen className="w-full h-full" /> },
 ];
 
@@ -56,7 +56,7 @@ export function ParentHome() {
               onClick={() => navigate('/coaches')}
             >
               <Search className="w-5 h-5" />
-              Find a Coach
+              Find an Academy
             </Button>
           </div>
         </div>
@@ -101,10 +101,10 @@ export function ParentHome() {
             <Card className="text-center py-10">
               <div className="text-4xl mb-3">📅</div>
               <h3 className="font-bold text-gray-900 mb-1">No upcoming sessions</h3>
-              <p className="text-gray-500 text-sm mb-4">Book your first session with a top coach!</p>
+              <p className="text-gray-500 text-sm mb-4">Book your first session with a top academy!</p>
               <Button onClick={() => navigate('/coaches')}>
                 <Search className="w-4 h-4" />
-                Browse Coaches
+                Browse Academies
               </Button>
             </Card>
           ) : (
@@ -135,10 +135,10 @@ export function ParentHome() {
           )}
         </div>
 
-        {/* Recommended Coaches */}
+        {/* Recommended Academies */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-900">Top Coaches for You</h2>
+            <h2 className="text-lg font-bold text-gray-900">Top Academies for You</h2>
             <button
               onClick={() => navigate('/coaches')}
               className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 font-medium"

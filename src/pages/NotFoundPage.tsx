@@ -20,7 +20,7 @@ export function NotFoundPage() {
             <Button variant="outline" fullWidth>Back to Home</Button>
           </Link>
           <Link to="/coaches">
-            <Button fullWidth>Find a Coach</Button>
+            <Button fullWidth>Find an Academy</Button>
           </Link>
         </div>
       </div>

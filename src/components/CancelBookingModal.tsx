@@ -96,7 +96,7 @@ export function CancelBookingModal({ booking, onClose }: CancelBookingModalProps
               <>
                 <h3 className="font-bold text-lg text-gray-900">Session rescheduled</h3>
                 <p className="text-sm text-gray-500 mt-2">
-                  Your new time is pending the coach's confirmation, same as any new booking request.
+                  Your new time is pending the academy's confirmation, same as any new booking request.
                 </p>
               </>
             )}

@@ -167,7 +167,7 @@ export function AdminAnalytics() {
           <Card>
             <h2 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
               <Star className="w-4 h-4 text-amber-500" />
-              Most Booked Coaches
+              Most Booked Academies
             </h2>
             {coachStats.length === 0 ? (
               <p className="text-sm text-gray-400 text-center py-8">No bookings yet.</p>

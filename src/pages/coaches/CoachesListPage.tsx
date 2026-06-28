@@ -52,8 +52,8 @@ export function CoachesListPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-black text-gray-900">Find Your Coach</h1>
-          <p className="text-gray-500 mt-1">{filtered.length} coaches available in Dubai</p>
+          <h1 className="text-3xl font-black text-gray-900">Find Your Academy</h1>
+          <p className="text-gray-500 mt-1">{filtered.length} academies available in Dubai</p>
         </div>
 
         {/* Search & Filter Bar */}
@@ -63,7 +63,7 @@ export function CoachesListPage() {
               <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
               <input
                 className="flex-1 text-sm bg-transparent outline-none placeholder-gray-400 text-gray-900"
-                placeholder="Search coaches, sports..."
+                placeholder="Search academies, sports..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
@@ -188,17 +188,17 @@ export function CoachesListPage() {
           sportFilter && !isSportLive(sportFilter, coaches) ? (
             <div className="text-center py-20">
               <div className="text-5xl mb-4">🚀</div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">{sportFilter} coaches coming soon!</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">{sportFilter} academies coming soon!</h3>
               <p className="text-gray-500 mb-6 max-w-md mx-auto">
-                We don't have a {sportFilter.toLowerCase()} coach on CoachNow just yet — but we're actively
-                onboarding trainers. Check back soon, or browse another sport in the meantime.
+                We don't have a {sportFilter.toLowerCase()} academy on CoachNow just yet — but we're actively
+                onboarding partners. Check back soon, or browse another sport in the meantime.
               </p>
-              <Button onClick={clearFilters}>Browse All Coaches</Button>
+              <Button onClick={clearFilters}>Browse All Academies</Button>
             </div>
           ) : (
             <div className="text-center py-20">
               <div className="text-5xl mb-4">🔍</div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">No coaches found</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">No academies found</h3>
               <p className="text-gray-500 mb-6">Try adjusting your filters or search terms.</p>
               <Button onClick={clearFilters}>Clear Filters</Button>
             </div>

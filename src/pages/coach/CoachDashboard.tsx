@@ -39,16 +39,16 @@ export function CoachDashboard() {
   const totalEarnings = completedBookings.reduce((sum, b) => sum + b.coachEarnings, 0);
   const pendingEarnings = acceptedBookings.reduce((sum, b) => sum + b.coachEarnings, 0);
 
-  const firstName = currentUser?.name.split(' ')[0] || 'Coach';
+  const displayName = currentUser?.name || 'Academy';
 
   return (
-    <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Coach Dashboard">
+    <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Academy Dashboard">
       <div className="space-y-8">
         {/* Welcome Banner */}
         <div className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl p-6 sm:p-8 text-white">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-black">Welcome, {firstName}! 🏆</h1>
+              <h1 className="text-2xl font-black">Welcome, {displayName}! 🏆</h1>
               <p className="text-emerald-100 mt-1">
                 {pendingBookings.length > 0
                   ? `You have ${pendingBookings.length} pending booking request${pendingBookings.length > 1 ? 's' : ''}!`
@@ -181,8 +181,8 @@ export function CoachDashboard() {
                 </div>
                 {!coachProfile.verified && (
                   <p className="text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2">
-                    Send your ID and coaching certification to our team on WhatsApp to get your "Verified" badge —
-                    it helps parents trust you with their kids.
+                    Send your trade license and any relevant certifications to our team on WhatsApp to get your "Verified" badge —
+                    it helps parents trust your academy with their kids.
                   </p>
                 )}
                 <Button variant="outline" size="sm" fullWidth onClick={() => navigate('/coach/profile-setup')} className="mt-2">

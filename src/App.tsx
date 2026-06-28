@@ -41,6 +41,7 @@ import { AdminSettings } from './pages/admin/AdminSettings';
 // Profile
 import { ProfilePage } from './pages/ProfilePage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { AcademyTermsPage } from './pages/AcademyTermsPage';
 
 // React Router doesn't scroll to an #anchor on navigation by default, so
 // links like /#how-it-works land at the top of the page instead of the
@@ -171,6 +172,7 @@ function App() {
                 </ProtectedRoute>
               } />
 
+              <Route path="/academy-terms" element={<AcademyTermsPage />} />
               {/* Fallback */}
               <Route path="*" element={<NotFoundPage />} />
             </Routes>

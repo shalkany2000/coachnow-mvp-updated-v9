@@ -27,7 +27,7 @@ export function ReferralCard() {
     }
   };
 
-  const whatsappMessage = `Hey! I've been booking sports coaches in Dubai through CoachNow — here's my referral link, sign up with it: ${link}`;
+  const whatsappMessage = `Hey! I've been booking sports academies in Dubai through CoachNow — here's my referral link, sign up with it: ${link}`;
 
   return (
     <Card className="bg-gradient-to-br from-pink-500 to-rose-500 text-white">

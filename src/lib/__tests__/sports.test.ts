@@ -38,35 +38,39 @@ describe('isSeedCoach', () => {
 });
 
 describe('isSportLive', () => {
-  it('always treats Swimming and Fitness as live, even with zero coaches', () => {
-    expect(isSportLive('Swimming', [])).toBe(true);
-    expect(isSportLive('Fitness', [])).toBe(true);
+  it('treats every one of the 6 launch sports as live, even with zero coaches', () => {
+    ALWAYS_ACTIVE_SPORTS.forEach((sport) => {
+      expect(isSportLive(sport, [])).toBe(true);
+    });
   });
 
-  it('treats Tennis/Padel/Badminton as not live when only seed coaches exist', () => {
-    const coaches = [makeCoach({ id: 'coach6', sportType: 'Tennis' })];
-    expect(isSportLive('Tennis', coaches)).toBe(false);
+  it('gates a hypothetical future sport until a real coach registers under it', () => {
+    // Squash isn't part of the launch catalog - this verifies the gating
+    // mechanism itself still works correctly for whatever gets added next,
+    // even though nothing currently uses it.
+    const coaches = [makeCoach({ id: 'coach6', sportType: 'Squash' })];
+    expect(isSportLive('Squash', coaches)).toBe(false);
   });
 
-  it('goes live the moment a real coach registers under a non-default sport', () => {
+  it('goes live the moment a real coach registers under a gated sport', () => {
     const coaches = [
-      makeCoach({ id: 'coach6', sportType: 'Tennis' }), // seed, doesn't count
-      makeCoach({ id: 'user_real_tennis_coach', sportType: 'Tennis' }), // real registration
+      makeCoach({ id: 'coach6', sportType: 'Squash' }), // seed, doesn't count
+      makeCoach({ id: 'user_real_squash_coach', sportType: 'Squash' }), // real registration
     ];
-    expect(isSportLive('Tennis', coaches)).toBe(true);
+    expect(isSportLive('Squash', coaches)).toBe(true);
   });
 
-  it('a real coach in one sport does not make every sport live', () => {
-    const coaches = [makeCoach({ id: 'user_real_coach', sportType: 'Tennis' })];
-    expect(isSportLive('Padel', coaches)).toBe(false);
+  it('a real coach in one gated sport does not make a different gated sport live', () => {
+    const coaches = [makeCoach({ id: 'user_real_coach', sportType: 'Squash' })];
+    expect(isSportLive('Cricket', coaches)).toBe(false);
   });
 });
 
 describe('visibleCoaches', () => {
   it('hides seed coaches for sports that are not live yet', () => {
     const coaches = [
-      makeCoach({ id: 'coach1', sportType: 'Swimming' }), // seed, but always-active sport
-      makeCoach({ id: 'coach6', sportType: 'Tennis' }),   // seed, not-live sport -> hidden
+      makeCoach({ id: 'coach1', sportType: 'Swimming' }), // seed, but an always-active launch sport
+      makeCoach({ id: 'coach6', sportType: 'Squash' }),   // seed, gated sport -> hidden
     ];
     const visible = visibleCoaches(coaches);
     expect(visible.map((c) => c.id)).toEqual(['coach1']);
@@ -79,7 +83,7 @@ describe('visibleCoaches', () => {
     expect(visibleCoaches(coaches)).toHaveLength(1);
   });
 
-  it('keeps Swimming and Fitness coaches visible even as seed data', () => {
+  it('keeps every launch sport visible even as seed data', () => {
     ALWAYS_ACTIVE_SPORTS.forEach((sport) => {
       const coaches = [makeCoach({ id: 'coach1', sportType: sport })];
       expect(visibleCoaches(coaches)).toHaveLength(1);

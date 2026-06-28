@@ -58,8 +58,8 @@ export function BookingPage() {
       <div className="min-h-screen bg-gray-50"><Navbar />
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Coach not found</h2>
-            <Button onClick={() => navigate('/coaches')}>Back to Coaches</Button>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Academy not found</h2>
+            <Button onClick={() => navigate('/coaches')}>Back to Academies</Button>
           </div>
         </div>
       </div>
@@ -74,7 +74,7 @@ export function BookingPage() {
           <div className="text-center">
             <h2 className="text-xl font-bold text-gray-900 mb-2">🌴 {coach.name} is on leave</h2>
             <p className="text-gray-500 mb-4">They aren't accepting new bookings right now — check back soon.</p>
-            <Button onClick={() => navigate('/coaches')}>Find Another Coach</Button>
+            <Button onClick={() => navigate('/coaches')}>Find Another Academy</Button>
           </div>
         </div>
       </div>
@@ -280,7 +280,7 @@ export function BookingPage() {
             </p>
             <div className="bg-gray-50 rounded-xl p-4 mb-8 text-left space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Coach</span>
+                <span className="text-gray-500">Academy</span>
                 <span className="font-semibold text-gray-800">{coach.name}</span>
               </div>
               <div className="flex justify-between text-sm">
@@ -355,7 +355,7 @@ export function BookingPage() {
 
             <div className="flex gap-3">
               <Button variant="outline" fullWidth onClick={() => navigate('/coaches')}>
-                Find More Coaches
+                Find More Academies
               </Button>
               <Button fullWidth onClick={() => navigate('/parent/bookings')}>
                 My Bookings
@@ -474,7 +474,7 @@ export function BookingPage() {
                   <MapPin className="w-5 h-5 text-blue-500 flex-shrink-0" />
                   <div>
                     <p className="font-semibold text-gray-800 text-sm">{coach.location}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">Coach's primary training location. Exact address shared after confirmation.</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Academy's primary training location. Exact address shared after confirmation.</p>
                   </div>
                 </div>
               </Card>
@@ -513,7 +513,7 @@ export function BookingPage() {
                   Session Notes (Optional)
                 </h2>
                 <textarea
-                  placeholder="Tell the coach about your goals, skill level, age, or any special requirements..."
+                  placeholder="Tell the academy about your goals, skill level, age, or any special requirements..."
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
                   rows={4}

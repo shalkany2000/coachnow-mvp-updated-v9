@@ -215,7 +215,7 @@ export function AdminSettings() {
           <div className="bg-blue-50 rounded-xl p-3 mt-4 flex items-start gap-2">
             <Info className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
             <p className="text-xs text-blue-700">
-              Coaches keep {100 - (parseFloat(rateInput) || 0)}% of each session's price at this rate.
+              Academies keep {100 - (parseFloat(rateInput) || 0)}% of each session's price at this rate.
             </p>
           </div>
 

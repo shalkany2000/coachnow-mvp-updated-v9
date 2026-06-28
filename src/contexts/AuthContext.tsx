@@ -18,9 +18,9 @@ import { findReferrerByCode, createReferralRecord } from '../lib/referralActions
 interface AuthContextType {
   currentUser: User | null;
   login: (email: string, password: string) => Promise<User>;
-  register: (name: string, email: string, phone: string, password: string, role: 'parent' | 'coach', referralCodeInput?: string) => Promise<User>;
+  register: (name: string, email: string, phone: string, password: string, role: 'parent' | 'coach', referralCodeInput?: string, termsAccepted?: boolean) => Promise<User>;
   signInWithGoogle: () => Promise<User>;
-  completeProfile: (phone: string, role: 'parent' | 'coach', referralCodeInput?: string) => Promise<User>;
+  completeProfile: (phone: string, role: 'parent' | 'coach', referralCodeInput?: string, termsAccepted?: boolean) => Promise<User>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   loading: boolean;
@@ -175,10 +175,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const completeProfile = async (
     phone: string,
     role: 'parent' | 'coach',
-    referralCodeInput?: string
+    referralCodeInput?: string,
+    termsAccepted?: boolean
   ): Promise<User> => {
     if (!currentUser) throw new Error('No signed-in account to complete a profile for.');
-    const updated: User = { ...currentUser, phone, role, profileComplete: true };
+    const updated: User = {
+      ...currentUser,
+      phone,
+      role,
+      profileComplete: true,
+      ...(role === 'coach' && termsAccepted ? { termsAcceptedAt: new Date().toISOString() } : {}),
+    };
     await setDoc(doc(db, 'users', currentUser.id), updated);
     setCurrentUser(updated);
 
@@ -210,7 +217,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     phone: string,
     password: string,
     role: 'parent' | 'coach',
-    referralCodeInput?: string
+    referralCodeInput?: string,
+    termsAccepted?: boolean
   ): Promise<User> => {
     const credential = await createUserWithEmailAndPassword(auth, email, password);
     const profile: User = {
@@ -221,6 +229,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role,
       createdAt: new Date().toISOString(),
       referralCode: generateReferralCode(name),
+      // Only academies/coaches see and must check this box — recorded as
+      // a real timestamp, not just a boolean, so there's an actual record
+      // of when they agreed if it's ever needed later.
+      ...(role === 'coach' && termsAccepted ? { termsAcceptedAt: new Date().toISOString() } : {}),
     };
     await setDoc(doc(db, 'users', credential.user.uid), profile);
     setCurrentUser(profile);

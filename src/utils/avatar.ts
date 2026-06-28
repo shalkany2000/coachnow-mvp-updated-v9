@@ -1,7 +1,7 @@
 // Generates a consistent initials-avatar URL to fall back to when a coach's
 // real photo fails to load (broken link, blocked domain, slow network).
 export function avatarFallbackUrl(name: string, size = 100): string {
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'Coach')}&background=dbeafe&color=1d4ed8&size=${size}`;
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'Academy')}&background=dbeafe&color=1d4ed8&size=${size}`;
 }
 
 // Drop-in onError handler: swaps a broken <img src> for the initials

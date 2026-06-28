@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Phone, Users, Dumbbell, Gift } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui/Button';
@@ -11,6 +11,7 @@ export function CompleteProfilePage() {
   const [role, setRole] = useState<'parent' | 'coach'>('parent');
   const [phone, setPhone] = useState('');
   const [referralCode, setReferralCode] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -20,9 +21,13 @@ export function CompleteProfilePage() {
       setError('Please enter a valid phone number.');
       return;
     }
+    if (role === 'coach' && !termsAccepted) {
+      setError('Please read and accept the Academy & Gym Partner Terms to continue.');
+      return;
+    }
     setLoading(true); setError('');
     try {
-      await completeProfile(phone, role, referralCode);
+      await completeProfile(phone, role, referralCode, termsAccepted);
       navigate(role === 'coach' ? '/coach/profile-setup' : '/parent/home');
     } catch (err) {
       console.error('Failed to complete profile:', err);
@@ -59,7 +64,7 @@ export function CompleteProfilePage() {
             >
               <Users className="w-6 h-6" />
               <div>
-                <p className="font-bold text-sm">Find Coaches</p>
+                <p className="font-bold text-sm">Find Academies</p>
                 <p className="text-xs opacity-70">I'm a parent</p>
               </div>
             </button>
@@ -72,8 +77,8 @@ export function CompleteProfilePage() {
             >
               <Dumbbell className="w-6 h-6" />
               <div>
-                <p className="font-bold text-sm">Offer Sessions</p>
-                <p className="text-xs opacity-70">I'm a coach</p>
+                <p className="font-bold text-sm">List My Academy</p>
+                <p className="text-xs opacity-70">I run an academy</p>
               </div>
             </button>
           </div>
@@ -93,7 +98,7 @@ export function CompleteProfilePage() {
               icon={<Phone className="w-4 h-4" />}
             />
             <p className="text-xs text-gray-400 -mt-3">
-              Required — this is how {role === 'parent' ? 'your coach' : 'parents'} reach you on WhatsApp.
+              Required — this is how {role === 'parent' ? 'your academy' : 'parents'} reach you on WhatsApp.
             </p>
             {role === 'parent' && (
               <Input
@@ -104,6 +109,22 @@ export function CompleteProfilePage() {
                 onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
                 icon={<Gift className="w-4 h-4" />}
               />
+            )}
+            {role === 'coach' && (
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  className="mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-xs text-gray-600">
+                  I've read and agree to the{' '}
+                  <Link to="/academy-terms" target="_blank" className="text-blue-600 font-semibold hover:underline">
+                    Academy & Gym Partner Terms
+                  </Link>
+                </span>
+              </label>
             )}
             <Button type="submit" fullWidth size="lg" loading={loading}>
               Continue

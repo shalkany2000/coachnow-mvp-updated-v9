@@ -88,7 +88,7 @@ export function AdminBookings() {
           <Search className="w-4 h-4 text-gray-400" />
           <input
             className="flex-1 text-sm bg-transparent outline-none placeholder-gray-400 text-gray-900"
-            placeholder="Search by parent, coach, or sport..."
+            placeholder="Search by parent, academy, or sport..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
@@ -99,7 +99,7 @@ export function AdminBookings() {
           {[
             { label: 'Total Revenue', value: `AED ${bookings.filter(b => b.status === 'completed').reduce((s,b) => s+b.price, 0)}`, color: 'gray' },
             { label: 'Platform Commission', value: `AED ${totalCommission}`, color: 'green' },
-            { label: 'Coach Payouts', value: `AED ${bookings.filter(b => b.status === 'completed').reduce((s,b) => s+b.coachEarnings, 0)}`, color: 'blue' },
+            { label: 'Academy Payouts', value: `AED ${bookings.filter(b => b.status === 'completed').reduce((s,b) => s+b.coachEarnings, 0)}`, color: 'blue' },
             { label: 'Pending Value', value: `AED ${bookings.filter(b => b.status === 'pending').reduce((s,b) => s+b.price, 0)}`, color: 'yellow' },
           ].map(stat => (
             <Card key={stat.label} padding="sm" className="text-center">
