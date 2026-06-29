@@ -13,7 +13,7 @@ import { Card } from '../../components/ui/Card';
 import { formatTime, formatRelativeTime } from '../../utils/time';
 
 const sportColors: Record<string, 'blue' | 'green' | 'yellow' | 'red' | 'gray' | 'purple'> = {
-  Swimming: 'blue', Fitness: 'green', Tennis: 'purple', Padel: 'yellow', Badminton: 'red',
+  Swimming: 'blue', Football: 'green', Gym: 'red', Tennis: 'purple', Basketball: 'yellow', Padel: 'gray',
 };
 
 export function CoachProfilePage() {
@@ -159,6 +159,24 @@ export function CoachProfilePage() {
               <p className="text-gray-600 leading-relaxed">{coach.bio}</p>
             </Card>
 
+            {/* Photo Gallery */}
+            {coach.photos && coach.photos.length > 0 && (
+              <Card>
+                <h2 className="text-lg font-bold text-gray-900 mb-3">Photos</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  {coach.photos.map((url, i) => (
+                    <img
+                      key={i}
+                      src={url}
+                      alt={`${coach.name} photo ${i + 1}`}
+                      className="w-full aspect-square rounded-xl object-cover bg-gray-100"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  ))}
+                </div>
+              </Card>
+            )}
+
             {/* Availability */}
             <Card>
               <h2 className="text-lg font-bold text-gray-900 mb-4">Weekly Availability</h2>
@@ -237,6 +255,22 @@ export function CoachProfilePage() {
               <div className="text-center mb-6">
                 <div className="text-3xl font-black text-blue-600">AED {coach.pricePerHour}</div>
                 <div className="text-sm text-gray-400 mt-1">per session</div>
+                {(coach.pricePerMonth || coach.pricePerTerm) && (
+                  <div className="flex items-center justify-center gap-3 mt-2.5 pt-2.5 border-t border-gray-100">
+                    {coach.pricePerMonth && (
+                      <div className="text-center">
+                        <p className="text-sm font-bold text-gray-700">AED {coach.pricePerMonth}</p>
+                        <p className="text-xs text-gray-400">per month</p>
+                      </div>
+                    )}
+                    {coach.pricePerTerm && (
+                      <div className="text-center">
+                        <p className="text-sm font-bold text-gray-700">AED {coach.pricePerTerm}</p>
+                        <p className="text-xs text-gray-400">per term (3mo)</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="space-y-3 mb-6">
                 <div className="flex items-center justify-between text-sm">

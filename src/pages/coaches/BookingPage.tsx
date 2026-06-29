@@ -27,6 +27,7 @@ export function BookingPage() {
 
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
+  const [packageType, setPackageType] = useState<'session' | 'month' | 'term'>('session');
   const [notes, setNotes] = useState('');
   const [trainingAddress, setTrainingAddress] = useState(currentUser?.homeAddress || '');
   const [loading, setLoading] = useState(false);
@@ -91,10 +92,20 @@ export function BookingPage() {
   const isFirstBooking = currentUser
     ? getBookingsForParent(currentUser.id, currentUser.email).length === 0
     : false;
-  const firstBookingDiscountApplies = settings.firstBookingDiscountEnabled && isFirstBooking;
-  const referralDiscountApplies = !!currentUser?.pendingReferralDiscountPercent;
 
-  const originalPrice = coach.pricePerHour;
+  // Discounts only apply to single-session bookings — a monthly or term
+  // package is a much bigger commitment, and applying the same
+  // percentage off automatically could mean an unintentionally large
+  // discount on a big-ticket package (e.g. 50% off a 3-month term).
+  const discountsEligible = packageType === 'session';
+  const firstBookingDiscountApplies = discountsEligible && settings.firstBookingDiscountEnabled && isFirstBooking;
+  const referralDiscountApplies = discountsEligible && !!currentUser?.pendingReferralDiscountPercent;
+
+  const originalPrice = packageType === 'month' && coach.pricePerMonth
+    ? coach.pricePerMonth
+    : packageType === 'term' && coach.pricePerTerm
+    ? coach.pricePerTerm
+    : coach.pricePerHour;
   const firstBookingDiscountAmount = firstBookingDiscountApplies
     ? Math.round(originalPrice * (settings.firstBookingDiscountPercent / 100))
     : 0;
@@ -165,10 +176,12 @@ export function BookingPage() {
     ? dayBlocks.flatMap((block) => generateSlots(block.start, block.end, coach.sessionDuration))
     : (!coach.weeklySchedule ? generateSlots(coach.availabilityStart, coach.availabilityEnd, coach.sessionDuration) : []);
 
-  const adminMessage = `Hi, I just booked a session on CoachNow and I'd like to pay.\n\nCoach: ${coach.name}\nSport: ${coach.sportType}\nDate: ${date}\nTime: ${time ? formatTime(time) : ''}\nDuration: ${coach.sessionDuration} min\n${discountApplies ? `Session price: AED ${originalPrice} - ${discountLabel} = AED ${finalPrice}\n` : `Session price: AED ${finalPrice}\n`}Service fee: AED ${serviceFee}\nVAT (5%): AED ${vatAmount}\n${creditApplied > 0 ? `Subtotal: AED ${totalCharged}\nCredit applied: -AED ${creditApplied}\n` : ''}Total to pay: AED ${amountDueNow}`;
+  const packageLabel = packageType === 'month' ? 'Monthly package' : packageType === 'term' ? '3-month term package' : 'Single session';
+
+  const adminMessage = `Hi, I just booked a session on CoachNow and I'd like to pay.\n\nCoach: ${coach.name}\nSport: ${coach.sportType}\nPlan: ${packageLabel}\nDate: ${date}\nTime: ${time ? formatTime(time) : ''}\n${packageType === 'session' ? `Duration: ${coach.sessionDuration} min\n` : ''}${discountApplies ? `Session price: AED ${originalPrice} - ${discountLabel} = AED ${finalPrice}\n` : `Session price: AED ${finalPrice}\n`}Service fee: AED ${serviceFee}\nVAT (5%): AED ${vatAmount}\n${creditApplied > 0 ? `Subtotal: AED ${totalCharged}\nCredit applied: -AED ${creditApplied}\n` : ''}Total to pay: AED ${amountDueNow}`;
 
   const coachMessage = currentUser
-    ? `Hi ${coach.name}, ${currentUser.name} just booked a session with you on CoachNow 🎉\n\nSport: ${coach.sportType}\nDate: ${date ? new Date(date).toLocaleDateString('en-AE', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}\nTime: ${time ? formatTime(time) : ''}\nDuration: ${coach.sessionDuration} min\n${trainingAddress ? `Address: ${trainingAddress}\n` : ''}\nPlease accept or decline this request from your CoachNow dashboard.`
+    ? `Hi ${coach.name}, ${currentUser.name} just booked a session with you on CoachNow 🎉\n\nSport: ${coach.sportType}\nPlan: ${packageLabel}\nDate: ${date ? new Date(date).toLocaleDateString('en-AE', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}\nTime: ${time ? formatTime(time) : ''}\n${packageType === 'session' ? `Duration: ${coach.sessionDuration} min\n` : ''}${trainingAddress ? `Address: ${trainingAddress}\n` : ''}\nPlease accept or decline this request from your CoachNow dashboard.`
     : '';
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -209,6 +222,7 @@ export function BookingPage() {
         serviceFee,
         vatAmount,
         ...(trainingAddress.trim() ? { trainingAddress: trainingAddress.trim() } : {}),
+        ...(packageType !== 'session' ? { packageType } : {}),
         ...(creditApplied > 0 ? { creditApplied } : {}),
         ...(discountApplies ? {
           originalPrice,
@@ -407,11 +421,60 @@ export function BookingPage() {
                 </div>
               )}
 
+              {/* Package Type */}
+              {(coach.pricePerMonth || coach.pricePerTerm) && (
+                <Card>
+                  <h2 className="font-bold text-gray-900 mb-3">Choose Your Plan</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setPackageType('session')}
+                      className={`text-left p-3 rounded-xl border-2 transition-all ${
+                        packageType === 'session' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <p className="text-sm font-bold text-gray-900">Single Session</p>
+                      <p className="text-xs text-gray-500 mt-0.5">AED {coach.pricePerHour} / session</p>
+                    </button>
+                    {coach.pricePerMonth && (
+                      <button
+                        type="button"
+                        onClick={() => setPackageType('month')}
+                        className={`text-left p-3 rounded-xl border-2 transition-all ${
+                          packageType === 'month' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <p className="text-sm font-bold text-gray-900">Monthly</p>
+                        <p className="text-xs text-gray-500 mt-0.5">AED {coach.pricePerMonth} / month</p>
+                      </button>
+                    )}
+                    {coach.pricePerTerm && (
+                      <button
+                        type="button"
+                        onClick={() => setPackageType('term')}
+                        className={`text-left p-3 rounded-xl border-2 transition-all ${
+                          packageType === 'term' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <p className="text-sm font-bold text-gray-900">3-Month Term</p>
+                        <p className="text-xs text-gray-500 mt-0.5">AED {coach.pricePerTerm} / term</p>
+                      </button>
+                    )}
+                  </div>
+                  {packageType !== 'session' && (
+                    <p className="text-xs text-gray-400 mt-3">
+                      Pick a start date below — {coach.name} will confirm your full schedule with you directly
+                      once your package is set up.
+                    </p>
+                  )}
+                </Card>
+              )}
+
               {/* Date */}
               <Card>
                 <h2 className="font-bold text-gray-900 flex items-center gap-2 mb-4">
                   <Calendar className="w-5 h-5 text-blue-600" />
-                  Select Date
+                  {packageType === 'session' ? 'Select Date' : 'Preferred Start Date'}
                 </h2>
                 <input
                   type="date"
@@ -439,7 +502,7 @@ export function BookingPage() {
               <Card>
                 <h2 className="font-bold text-gray-900 flex items-center gap-2 mb-4">
                   <Clock className="w-5 h-5 text-blue-600" />
-                  Select Time
+                  {packageType === 'session' ? 'Select Time' : 'Preferred Start Time'}
                 </h2>
                 <p className="text-xs text-gray-400 mb-3">
                   {dayBlocks && dayBlocks.length > 0

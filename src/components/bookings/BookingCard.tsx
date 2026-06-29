@@ -52,6 +52,11 @@ export function BookingCard({ booking, role, onAccept, onReject, onComplete, onM
             }`}>
               {booking.paid ? 'Paid' : 'Unpaid'}
             </span>
+            {booking.packageType && booking.packageType !== 'session' && (
+              <span className="inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full bg-purple-100 text-purple-700">
+                {booking.packageType === 'month' ? 'Monthly' : '3-Month Term'}
+              </span>
+            )}
           </div>
           <h3 className="font-bold text-gray-900 text-base">
             {role === 'parent' ? booking.coachName : booking.parentName}

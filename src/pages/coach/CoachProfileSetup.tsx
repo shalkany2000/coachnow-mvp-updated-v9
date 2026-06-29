@@ -58,9 +58,12 @@ export function CoachProfileSetup() {
     bio: existingCoach?.bio || '',
     sportType: existingCoach?.sportType || '',
     pricePerHour: existingCoach?.pricePerHour?.toString() || '',
+    pricePerMonth: existingCoach?.pricePerMonth?.toString() || '',
+    pricePerTerm: existingCoach?.pricePerTerm?.toString() || '',
     location: existingCoach?.location || '',
     experience: existingCoach?.experience || '',
     avatar: existingCoach?.avatar || '',
+    photos: existingCoach?.photos || [],
     weeklySchedule: deriveInitialSchedule(existingCoach),
     sessionDuration: existingCoach?.sessionDuration?.toString() || '60',
     languages: existingCoach?.languages || [],
@@ -74,9 +77,12 @@ export function CoachProfileSetup() {
         bio: existingCoach.bio,
         sportType: existingCoach.sportType,
         pricePerHour: existingCoach.pricePerHour.toString(),
+        pricePerMonth: existingCoach.pricePerMonth?.toString() || '',
+        pricePerTerm: existingCoach.pricePerTerm?.toString() || '',
         location: existingCoach.location,
         experience: existingCoach.experience,
         avatar: existingCoach.avatar,
+        photos: existingCoach.photos || [],
         weeklySchedule: deriveInitialSchedule(existingCoach),
         sessionDuration: (existingCoach.sessionDuration || 60).toString(),
         languages: existingCoach.languages,
@@ -84,6 +90,13 @@ export function CoachProfileSetup() {
       });
     }
   }, [existingCoach?.id]);
+
+  const addPhoto = () => setForm((p) => ({ ...p, photos: [...p.photos, ''] }));
+  const updatePhoto = (index: number, value: string) =>
+    setForm((p) => ({ ...p, photos: p.photos.map((url, i) => (i === index ? value : url)) }));
+  const removePhoto = (index: number) =>
+    setForm((p) => ({ ...p, photos: p.photos.filter((_, i) => i !== index) }));
+
 
   const toggleDayWorking = (day: string) => {
     setForm((p) => {
@@ -172,9 +185,12 @@ export function CoachProfileSetup() {
         bio: form.bio,
         sportType: form.sportType,
         pricePerHour: parseInt(form.pricePerHour) || 0,
+        ...(form.pricePerMonth.trim() ? { pricePerMonth: parseInt(form.pricePerMonth) } : {}),
+        ...(form.pricePerTerm.trim() ? { pricePerTerm: parseInt(form.pricePerTerm) } : {}),
         location: form.location,
         experience: form.experience,
         avatar: form.avatar,
+        photos: form.photos.map((p) => p.trim()).filter(Boolean),
         availability: workingDays,
         availabilityStart: starts.sort()[0],
         availabilityEnd: ends.sort().slice(-1)[0],
@@ -259,7 +275,7 @@ export function CoachProfileSetup() {
                   <p className="text-xs text-gray-400 mt-1">{form.bio.length}/500 characters</p>
                 </div>
                 <Input
-                  label="Profile Photo URL"
+                  label="Cover Photo URL"
                   value={form.avatar}
                   onChange={e => setForm(p => ({ ...p, avatar: e.target.value }))}
                   placeholder="https://your-photo-url.com/photo.jpg"
@@ -267,9 +283,54 @@ export function CoachProfileSetup() {
                 {form.avatar && (
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                     <img src={form.avatar} alt="Preview" className="w-14 h-14 rounded-xl object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                    <p className="text-xs text-gray-500">Profile photo preview</p>
+                    <p className="text-xs text-gray-500">Cover photo preview — shown first on your listing</p>
                   </div>
                 )}
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-1.5">Photo Gallery (optional)</label>
+                  <p className="text-xs text-gray-400 mb-2.5">
+                    Paste links to more photos of your facility — host them anywhere (Google Photos, Imgur, your
+                    own website) and paste the direct image link here.
+                  </p>
+                  <div className="space-y-2.5">
+                    {form.photos.map((url, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        {url && (
+                          <img
+                            src={url}
+                            alt={`Gallery ${i + 1}`}
+                            className="w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-gray-100"
+                            onError={(e) => { (e.target as HTMLImageElement).style.opacity = '0.2'; }}
+                          />
+                        )}
+                        <input
+                          type="text"
+                          value={url}
+                          onChange={(e) => updatePhoto(i, e.target.value)}
+                          placeholder="https://..."
+                          className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removePhoto(i)}
+                          aria-label="Remove photo"
+                          className="text-gray-400 hover:text-red-500 p-1.5 flex-shrink-0"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addPhoto}
+                    className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 mt-2.5"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Add a photo
+                  </button>
+                </div>
               </div>
             </Card>
 
@@ -299,6 +360,20 @@ export function CoachProfileSetup() {
                   placeholder="e.g. 250"
                 />
                 <Input
+                  label="Price per Month (AED, optional)"
+                  type="number"
+                  value={form.pricePerMonth}
+                  onChange={e => setForm(p => ({ ...p, pricePerMonth: e.target.value }))}
+                  placeholder="e.g. 800"
+                />
+                <Input
+                  label="Price per Term — 3 Months (AED, optional)"
+                  type="number"
+                  value={form.pricePerTerm}
+                  onChange={e => setForm(p => ({ ...p, pricePerTerm: e.target.value }))}
+                  placeholder="e.g. 2200"
+                />
+                <Input
                   label="Established Since"
                   value={form.experience}
                   onChange={e => setForm(p => ({ ...p, experience: e.target.value }))}
@@ -319,6 +394,10 @@ export function CoachProfileSetup() {
                   placeholder="Select duration"
                 />
               </div>
+              <p className="text-xs text-gray-400 mt-3">
+                Leave monthly or term pricing blank if you only offer single sessions. Customers will be able
+                to choose whichever option you've set when they book.
+              </p>
             </Card>
 
             {/* Availability */}

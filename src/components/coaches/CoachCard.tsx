@@ -44,6 +44,9 @@ export function CoachCard({ coach }: { coach: Coach }) {
             <div className="text-right flex-shrink-0">
               <p className="text-xl font-bold text-blue-600">AED {coach.pricePerHour}</p>
               <p className="text-xs text-gray-400">per session</p>
+              {(coach.pricePerMonth || coach.pricePerTerm) && (
+                <p className="text-xs text-emerald-600 font-semibold mt-0.5">+ packages available</p>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2 mt-2 flex-wrap">

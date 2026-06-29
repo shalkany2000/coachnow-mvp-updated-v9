@@ -10,6 +10,7 @@ interface CoachContextType {
   getCoach: (id: string) => Coach | undefined;
   updateCoach: (id: string, data: Partial<Coach>) => Promise<void>;
   addCoach: (coach: Coach) => Promise<void>;
+  syncStarterListings: () => Promise<void>;
 }
 
 const CoachContext = createContext<CoachContextType | undefined>(undefined);
@@ -74,10 +75,20 @@ export function CoachProvider({ children }: { children: ReactNode }) {
     await setDoc(doc(db, COLLECTION, coach.id), coach);
   };
 
+  // The initial seed only ever fires once, when the collection is
+  // completely empty — updating mockCoaches in code afterward never
+  // touches documents that already exist live. This explicitly
+  // overwrites just the 8 fixed starter-listing IDs (coach1-coach8) with
+  // whatever's currently in mockCoaches, without touching any real
+  // academy that's registered since — those have different, non-seed IDs.
+  const syncStarterListings = async () => {
+    await Promise.all(mockCoaches.map((c) => setDoc(doc(db, COLLECTION, c.id), c)));
+  };
+
   const getCoach = (id: string) => coaches.find((c) => c.id === id);
 
   return (
-    <CoachContext.Provider value={{ coaches, loading, error, getCoach, updateCoach, addCoach }}>
+    <CoachContext.Provider value={{ coaches, loading, error, getCoach, updateCoach, addCoach, syncStarterListings }}>
       {children}
     </CoachContext.Provider>
   );

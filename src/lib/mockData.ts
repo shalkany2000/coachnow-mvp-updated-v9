@@ -61,12 +61,15 @@ export interface Coach {
   email: string;
   phone?: string;
   sportType: string;
-  pricePerHour: number;
+  pricePerHour: number; // per-session price - always required, the baseline tier
+  pricePerMonth?: number; // optional monthly package price
+  pricePerTerm?: number; // optional 3-month package price
   location: string;
   rating: number;
   reviewCount: number;
   bio: string;
-  avatar: string;
+  avatar: string; // primary/cover photo
+  photos?: string[]; // additional gallery photos, pasted links same as avatar
   experience: string;
   languages: string[];
   availability: string[];
@@ -136,6 +139,7 @@ export interface Booking {
   rescheduledAt?: string;
   rescheduledFrom?: { date: string; time: string }; // the original slot, for an audit trail
   trainingAddress?: string; // where the coach should actually go for this specific session
+  packageType?: 'session' | 'month' | 'term'; // which pricing tier this booking was made under
   paid: boolean;
   paidAt?: string;
   price: number;
