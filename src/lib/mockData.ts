@@ -82,6 +82,7 @@ export interface Coach {
   bio: string;
   avatar: string; // primary/cover photo
   photos?: string[]; // additional gallery photos, pasted links same as avatar
+  locations?: string[]; // physical branch addresses/Maps links - where customers go for in-person training
   experience: string;
   languages: string[];
   availability: string[];
@@ -150,7 +151,8 @@ export interface Booking {
   cancellationPenaltyPercent?: number; // % forfeited at the time of cancellation, for transparency
   rescheduledAt?: string;
   rescheduledFrom?: { date: string; time: string }; // the original slot, for an audit trail
-  trainingAddress?: string; // where the coach should actually go for this specific session
+  trainingMode?: 'at_academy' | 'at_home'; // where this specific session happens
+  trainingAddress?: string; // the actual address - either the chosen academy location, or the customer's home address, depending on trainingMode
   packageType?: 'session' | 'month' | 'term'; // which pricing tier this booking was made under
   sessionsIncluded?: number; // snapshot of the plan's session count at booking time - the academy's
   freeSessions?: number;     // plan could change later, so this is captured, not looked up live

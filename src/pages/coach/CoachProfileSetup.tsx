@@ -9,6 +9,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { SPORT_TYPES, UAE_EMIRATES, DAY_KEYS, DayKey, TimeBlock, Coach } from '../../lib/mockData';
+import { isMapLink } from '../../lib/config';
 
 const sidebarItems = [
   { label: 'Dashboard', path: '/coach/dashboard', icon: <LayoutDashboard className="w-full h-full" /> },
@@ -71,6 +72,7 @@ export function CoachProfileSetup() {
     experience: existingCoach?.experience || '',
     avatar: existingCoach?.avatar || '',
     photos: existingCoach?.photos || [],
+    locations: existingCoach?.locations || [],
     weeklySchedule: deriveInitialSchedule(existingCoach),
     sessionDuration: existingCoach?.sessionDuration?.toString() || '60',
     languages: existingCoach?.languages || [],
@@ -97,6 +99,7 @@ export function CoachProfileSetup() {
         experience: existingCoach.experience,
         avatar: existingCoach.avatar,
         photos: existingCoach.photos || [],
+        locations: existingCoach.locations || [],
         weeklySchedule: deriveInitialSchedule(existingCoach),
         sessionDuration: (existingCoach.sessionDuration || 60).toString(),
         languages: existingCoach.languages,
@@ -110,6 +113,12 @@ export function CoachProfileSetup() {
     setForm((p) => ({ ...p, photos: p.photos.map((url, i) => (i === index ? value : url)) }));
   const removePhoto = (index: number) =>
     setForm((p) => ({ ...p, photos: p.photos.filter((_, i) => i !== index) }));
+
+  const addLocation = () => setForm((p) => ({ ...p, locations: [...p.locations, ''] }));
+  const updateLocation = (index: number, value: string) =>
+    setForm((p) => ({ ...p, locations: p.locations.map((loc, i) => (i === index ? value : loc)) }));
+  const removeLocation = (index: number) =>
+    setForm((p) => ({ ...p, locations: p.locations.filter((_, i) => i !== index) }));
 
 
   const toggleDayWorking = (day: string) => {
@@ -226,6 +235,7 @@ export function CoachProfileSetup() {
         experience: form.experience,
         avatar: form.avatar,
         photos: form.photos.map((p) => p.trim()).filter(Boolean),
+        locations: form.locations.map((l) => l.trim()).filter(Boolean),
         availability: workingDays,
         availabilityStart: starts.sort()[0],
         availabilityEnd: ends.sort().slice(-1)[0],
@@ -364,6 +374,50 @@ export function CoachProfileSetup() {
                   >
                     <Plus className="w-3.5 h-3.5" />
                     Add a photo
+                  </button>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-1.5">Your Locations (optional)</label>
+                  <p className="text-xs text-gray-400 mb-2.5">
+                    Where customers come to train with you in person — add one or more branches. For each, open
+                    Google Maps, find the spot, tap <strong>Share</strong> → <strong>Copy link</strong>, and paste
+                    it here. A typed address works too.
+                  </p>
+                  <div className="space-y-2.5">
+                    {form.locations.map((loc, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={loc}
+                          onChange={(e) => updateLocation(i, e.target.value)}
+                          placeholder="Paste a Maps link, or type your branch address"
+                          className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeLocation(i)}
+                          aria-label="Remove location"
+                          className="text-gray-400 hover:text-red-500 p-1.5 flex-shrink-0"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                    {form.locations.some((l) => isMapLink(l)) && (
+                      <p className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        Maps link detected — customers will see your exact pin.
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addLocation}
+                    className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 mt-2.5"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Add a location
                   </button>
                 </div>
               </div>

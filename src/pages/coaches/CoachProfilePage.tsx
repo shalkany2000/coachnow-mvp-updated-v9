@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useReviews } from '../../contexts/ReviewContext';
 import { isSeedCoach, isSportLive } from '../../lib/sports';
 import { DAY_KEYS } from '../../lib/mockData';
+import { buildMapLink } from '../../lib/config';
 import { Navbar } from '../../components/layout/Navbar';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -172,6 +173,32 @@ export function CoachProfilePage() {
                       className="w-full aspect-square rounded-xl object-cover bg-gray-100"
                       onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                     />
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            {/* Locations */}
+            {coach.locations && coach.locations.length > 0 && (
+              <Card>
+                <h2 className="text-lg font-bold text-gray-900 mb-3">
+                  {coach.locations.length > 1 ? 'Our Locations' : 'Our Location'}
+                </h2>
+                <div className="space-y-2.5">
+                  {coach.locations.map((loc, i) => (
+                    <a
+                      key={i}
+                      href={buildMapLink(loc)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-start gap-2.5 bg-gray-50 hover:bg-gray-100 rounded-xl px-3.5 py-3 transition-colors"
+                    >
+                      <MapPin className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm text-gray-700">{loc}</p>
+                        <p className="text-xs font-semibold text-blue-600 mt-0.5">View on map →</p>
+                      </div>
+                    </a>
                   ))}
                 </div>
               </Card>

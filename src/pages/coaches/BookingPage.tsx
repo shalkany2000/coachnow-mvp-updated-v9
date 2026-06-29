@@ -12,7 +12,7 @@ import { Navbar } from '../../components/layout/Navbar';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { formatTime, generateSlots } from '../../utils/time';
-import { buildAdminWhatsAppLink, buildWhatsAppLink, isMapLink, VAT_RATE, SERVICE_FEE_AED } from '../../lib/config';
+import { buildAdminWhatsAppLink, buildWhatsAppLink, buildMapLink, isMapLink, VAT_RATE, SERVICE_FEE_AED } from '../../lib/config';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -30,6 +30,10 @@ export function BookingPage() {
   const [packageType, setPackageType] = useState<'session' | 'month' | 'term'>('session');
   const [notes, setNotes] = useState('');
   const [trainingAddress, setTrainingAddress] = useState(currentUser?.homeAddress || '');
+  const [trainingMode, setTrainingMode] = useState<'at_academy' | 'at_home'>(
+    coach?.locations && coach.locations.length > 0 ? 'at_academy' : 'at_home'
+  );
+  const [selectedLocationIndex, setSelectedLocationIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   // Captured at the moment of submission — without this, the success
@@ -177,10 +181,14 @@ export function BookingPage() {
     ? `${packageType === 'month' ? 'Monthly' : '3-month term'} package — ${selectedPlan.sessionsIncluded}${selectedPlan.freeSessions ? ` + ${selectedPlan.freeSessions} free` : ''} sessions`
     : 'Single session';
 
+  const finalTrainingAddress = trainingMode === 'at_academy' && coach.locations && coach.locations[selectedLocationIndex]
+    ? coach.locations[selectedLocationIndex]
+    : trainingAddress;
+
   const adminMessage = `Hi, I just booked a session on CoachNow and I'd like to pay.\n\nCoach: ${coach.name}\nSport: ${coach.sportType}\nPlan: ${packageLabel}\nDate: ${date}\nTime: ${time ? formatTime(time) : ''}\n${packageType === 'session' ? `Duration: ${coach.sessionDuration} min\n` : ''}${discountApplies ? `Session price: AED ${originalPrice} - ${discountLabel} = AED ${finalPrice}\n` : `Session price: AED ${finalPrice}\n`}Service fee: AED ${serviceFee}\nVAT (5%): AED ${vatAmount}\n${creditApplied > 0 ? `Subtotal: AED ${totalCharged}\nCredit applied: -AED ${creditApplied}\n` : ''}Total to pay: AED ${amountDueNow}`;
 
   const coachMessage = currentUser
-    ? `Hi ${coach.name}, ${currentUser.name} just booked a session with you on CoachNow 🎉\n\nSport: ${coach.sportType}\nPlan: ${packageLabel}\nDate: ${date ? new Date(date).toLocaleDateString('en-AE', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}\nTime: ${time ? formatTime(time) : ''}\n${packageType === 'session' ? `Duration: ${coach.sessionDuration} min\n` : ''}${trainingAddress ? `Address: ${trainingAddress}\n` : ''}\nPlease accept or decline this request from your CoachNow dashboard.`
+    ? `Hi ${coach.name}, ${currentUser.name} just booked a session with you on CoachNow 🎉\n\nSport: ${coach.sportType}\nPlan: ${packageLabel}\nDate: ${date ? new Date(date).toLocaleDateString('en-AE', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}\nTime: ${time ? formatTime(time) : ''}\n${packageType === 'session' ? `Duration: ${coach.sessionDuration} min\n` : ''}${finalTrainingAddress ? `${trainingMode === 'at_academy' ? 'Location' : 'Customer address'}: ${finalTrainingAddress}\n` : ''}\nPlease accept or decline this request from your CoachNow dashboard.`
     : '';
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -220,7 +228,8 @@ export function BookingPage() {
         notes,
         serviceFee,
         vatAmount,
-        ...(trainingAddress.trim() ? { trainingAddress: trainingAddress.trim() } : {}),
+        trainingMode,
+        ...(finalTrainingAddress.trim() ? { trainingAddress: finalTrainingAddress.trim() } : {}),
         ...(packageType !== 'session' ? { packageType } : {}),
         ...(selectedPlan ? { sessionsIncluded: selectedPlan.sessionsIncluded, ...(selectedPlan.freeSessions ? { freeSessions: selectedPlan.freeSessions } : {}) } : {}),
         ...(creditApplied > 0 ? { creditApplied } : {}),
@@ -554,30 +563,90 @@ export function BookingPage() {
                 </div>
               </Card>
 
-              {/* Training Address */}
+              {/* Training Location */}
               <Card>
-                <h2 className="font-bold text-gray-900 flex items-center gap-2 mb-1">
+                <h2 className="font-bold text-gray-900 flex items-center gap-2 mb-3">
                   <MapPin className="w-5 h-5 text-blue-600" />
                   Training Location
                 </h2>
-                <p className="text-xs text-gray-400 mb-2">
-                  {coach.name.split(' ')[0]} comes to you — for the most accurate directions, open Google Maps,
-                  find your exact location, tap <strong>Share</strong>, then <strong>Copy link</strong> and paste
-                  it below. A typed address works too if that's easier.
-                  {currentUser?.homeAddress && ' Pre-filled from your saved address — edit it if this session is somewhere else.'}
-                </p>
-                <textarea
-                  placeholder="Paste your Google Maps link, or type your address (e.g. Villa 12, Street 4, Al Barsha, Dubai)"
-                  value={trainingAddress}
-                  onChange={e => setTrainingAddress(e.target.value)}
-                  rows={2}
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all resize-none"
-                />
-                {isMapLink(trainingAddress) && (
-                  <p className="text-xs text-emerald-600 font-medium mt-1.5 flex items-center gap-1">
-                    <CheckCircle className="w-3.5 h-3.5" />
-                    Maps link detected — {coach.name.split(' ')[0]} will see your exact pin.
-                  </p>
+
+                {coach.locations && coach.locations.length > 0 && (
+                  <div className="grid grid-cols-2 gap-2.5 mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setTrainingMode('at_academy')}
+                      className={`text-left p-3 rounded-xl border-2 transition-all ${
+                        trainingMode === 'at_academy' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <p className="text-sm font-bold text-gray-900">At {coach.name}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Train at their facility</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTrainingMode('at_home')}
+                      className={`text-left p-3 rounded-xl border-2 transition-all ${
+                        trainingMode === 'at_home' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <p className="text-sm font-bold text-gray-900">At My Location</p>
+                      <p className="text-xs text-gray-500 mt-0.5">They come to you</p>
+                    </button>
+                  </div>
+                )}
+
+                {trainingMode === 'at_academy' && coach.locations && coach.locations.length > 0 ? (
+                  <div className="space-y-2">
+                    {coach.locations.length > 1 && (
+                      <p className="text-xs text-gray-400 mb-1">Pick whichever branch is closest to you:</p>
+                    )}
+                    {coach.locations.map((loc, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setSelectedLocationIndex(i)}
+                        className={`w-full flex items-start gap-2.5 text-left p-3 rounded-xl border-2 transition-all ${
+                          selectedLocationIndex === i ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <MapPin className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                        <div className="min-w-0">
+                          <p className="text-sm text-gray-700">{loc}</p>
+                          <a
+                            href={buildMapLink(loc)}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-xs font-semibold text-blue-600 hover:underline"
+                          >
+                            View on map →
+                          </a>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-xs text-gray-400 mb-2">
+                      {coach.name.split(' ')[0]} comes to you — for the most accurate directions, open Google Maps,
+                      find your exact location, tap <strong>Share</strong>, then <strong>Copy link</strong> and paste
+                      it below. A typed address works too if that's easier.
+                      {currentUser?.homeAddress && ' Pre-filled from your saved address — edit it if this session is somewhere else.'}
+                    </p>
+                    <textarea
+                      placeholder="Paste your Google Maps link, or type your address (e.g. Villa 12, Street 4, Al Barsha, Dubai)"
+                      value={trainingAddress}
+                      onChange={e => setTrainingAddress(e.target.value)}
+                      rows={2}
+                      className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all resize-none"
+                    />
+                    {isMapLink(trainingAddress) && (
+                      <p className="text-xs text-emerald-600 font-medium mt-1.5 flex items-center gap-1">
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        Maps link detected — {coach.name.split(' ')[0]} will see your exact pin.
+                      </p>
+                    )}
+                  </>
                 )}
               </Card>
 
