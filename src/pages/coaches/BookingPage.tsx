@@ -101,11 +101,8 @@ export function BookingPage() {
   const firstBookingDiscountApplies = discountsEligible && settings.firstBookingDiscountEnabled && isFirstBooking;
   const referralDiscountApplies = discountsEligible && !!currentUser?.pendingReferralDiscountPercent;
 
-  const originalPrice = packageType === 'month' && coach.pricePerMonth
-    ? coach.pricePerMonth
-    : packageType === 'term' && coach.pricePerTerm
-    ? coach.pricePerTerm
-    : coach.pricePerHour;
+  const selectedPlan = packageType === 'month' ? coach.monthlyPlan : packageType === 'term' ? coach.termPlan : null;
+  const originalPrice = selectedPlan ? selectedPlan.price : coach.pricePerHour;
   const firstBookingDiscountAmount = firstBookingDiscountApplies
     ? Math.round(originalPrice * (settings.firstBookingDiscountPercent / 100))
     : 0;
@@ -176,7 +173,9 @@ export function BookingPage() {
     ? dayBlocks.flatMap((block) => generateSlots(block.start, block.end, coach.sessionDuration))
     : (!coach.weeklySchedule ? generateSlots(coach.availabilityStart, coach.availabilityEnd, coach.sessionDuration) : []);
 
-  const packageLabel = packageType === 'month' ? 'Monthly package' : packageType === 'term' ? '3-month term package' : 'Single session';
+  const packageLabel = selectedPlan
+    ? `${packageType === 'month' ? 'Monthly' : '3-month term'} package — ${selectedPlan.sessionsIncluded}${selectedPlan.freeSessions ? ` + ${selectedPlan.freeSessions} free` : ''} sessions`
+    : 'Single session';
 
   const adminMessage = `Hi, I just booked a session on CoachNow and I'd like to pay.\n\nCoach: ${coach.name}\nSport: ${coach.sportType}\nPlan: ${packageLabel}\nDate: ${date}\nTime: ${time ? formatTime(time) : ''}\n${packageType === 'session' ? `Duration: ${coach.sessionDuration} min\n` : ''}${discountApplies ? `Session price: AED ${originalPrice} - ${discountLabel} = AED ${finalPrice}\n` : `Session price: AED ${finalPrice}\n`}Service fee: AED ${serviceFee}\nVAT (5%): AED ${vatAmount}\n${creditApplied > 0 ? `Subtotal: AED ${totalCharged}\nCredit applied: -AED ${creditApplied}\n` : ''}Total to pay: AED ${amountDueNow}`;
 
@@ -223,6 +222,7 @@ export function BookingPage() {
         vatAmount,
         ...(trainingAddress.trim() ? { trainingAddress: trainingAddress.trim() } : {}),
         ...(packageType !== 'session' ? { packageType } : {}),
+        ...(selectedPlan ? { sessionsIncluded: selectedPlan.sessionsIncluded, ...(selectedPlan.freeSessions ? { freeSessions: selectedPlan.freeSessions } : {}) } : {}),
         ...(creditApplied > 0 ? { creditApplied } : {}),
         ...(discountApplies ? {
           originalPrice,
@@ -422,7 +422,7 @@ export function BookingPage() {
               )}
 
               {/* Package Type */}
-              {(coach.pricePerMonth || coach.pricePerTerm) && (
+              {(coach.monthlyPlan || coach.termPlan) && (
                 <Card>
                   <h2 className="font-bold text-gray-900 mb-3">Choose Your Plan</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -436,7 +436,7 @@ export function BookingPage() {
                       <p className="text-sm font-bold text-gray-900">Single Session</p>
                       <p className="text-xs text-gray-500 mt-0.5">AED {coach.pricePerHour} / session</p>
                     </button>
-                    {coach.pricePerMonth && (
+                    {coach.monthlyPlan && (
                       <button
                         type="button"
                         onClick={() => setPackageType('month')}
@@ -445,10 +445,13 @@ export function BookingPage() {
                         }`}
                       >
                         <p className="text-sm font-bold text-gray-900">Monthly</p>
-                        <p className="text-xs text-gray-500 mt-0.5">AED {coach.pricePerMonth} / month</p>
+                        <p className="text-xs text-gray-500 mt-0.5">AED {coach.monthlyPlan.price} · {coach.monthlyPlan.sessionsIncluded} sessions</p>
+                        {!!coach.monthlyPlan.freeSessions && (
+                          <p className="text-xs text-emerald-600 font-semibold mt-0.5">+{coach.monthlyPlan.freeSessions} free</p>
+                        )}
                       </button>
                     )}
-                    {coach.pricePerTerm && (
+                    {coach.termPlan && (
                       <button
                         type="button"
                         onClick={() => setPackageType('term')}
@@ -457,10 +460,19 @@ export function BookingPage() {
                         }`}
                       >
                         <p className="text-sm font-bold text-gray-900">3-Month Term</p>
-                        <p className="text-xs text-gray-500 mt-0.5">AED {coach.pricePerTerm} / term</p>
+                        <p className="text-xs text-gray-500 mt-0.5">AED {coach.termPlan.price} · {coach.termPlan.sessionsIncluded} sessions</p>
+                        {!!coach.termPlan.freeSessions && (
+                          <p className="text-xs text-emerald-600 font-semibold mt-0.5">+{coach.termPlan.freeSessions} free</p>
+                        )}
                       </button>
                     )}
                   </div>
+                  {selectedPlan && (
+                    <p className="text-xs text-gray-500 mt-3 bg-gray-50 rounded-lg px-3 py-2">
+                      {selectedPlan.sessionsIncluded}{selectedPlan.freeSessions ? ` + ${selectedPlan.freeSessions} free` : ''} sessions for
+                      AED {selectedPlan.price} — works out to about AED {Math.round(selectedPlan.price / (selectedPlan.sessionsIncluded + (selectedPlan.freeSessions || 0)))}/session.
+                    </p>
+                  )}
                   {packageType !== 'session' && (
                     <p className="text-xs text-gray-400 mt-3">
                       Pick a start date below — {coach.name} will confirm your full schedule with you directly

@@ -253,20 +253,31 @@ export function CoachProfilePage() {
           <div className="space-y-4">
             <Card className="sticky top-24">
               <div className="text-center mb-6">
+                {coach.isPrivateTraining && (
+                  <p className="text-xs font-semibold text-purple-600 bg-purple-50 inline-block px-2.5 py-1 rounded-full mb-2">
+                    Private 1-to-1 Training
+                  </p>
+                )}
                 <div className="text-3xl font-black text-blue-600">AED {coach.pricePerHour}</div>
                 <div className="text-sm text-gray-400 mt-1">per session</div>
-                {(coach.pricePerMonth || coach.pricePerTerm) && (
+                {(coach.monthlyPlan || coach.termPlan) && (
                   <div className="flex items-center justify-center gap-3 mt-2.5 pt-2.5 border-t border-gray-100">
-                    {coach.pricePerMonth && (
+                    {coach.monthlyPlan && (
                       <div className="text-center">
-                        <p className="text-sm font-bold text-gray-700">AED {coach.pricePerMonth}</p>
-                        <p className="text-xs text-gray-400">per month</p>
+                        <p className="text-sm font-bold text-gray-700">AED {coach.monthlyPlan.price}</p>
+                        <p className="text-xs text-gray-400">
+                          {coach.monthlyPlan.sessionsIncluded} sessions/mo
+                          {!!coach.monthlyPlan.freeSessions && <span className="text-emerald-600"> +{coach.monthlyPlan.freeSessions} free</span>}
+                        </p>
                       </div>
                     )}
-                    {coach.pricePerTerm && (
+                    {coach.termPlan && (
                       <div className="text-center">
-                        <p className="text-sm font-bold text-gray-700">AED {coach.pricePerTerm}</p>
-                        <p className="text-xs text-gray-400">per term (3mo)</p>
+                        <p className="text-sm font-bold text-gray-700">AED {coach.termPlan.price}</p>
+                        <p className="text-xs text-gray-400">
+                          {coach.termPlan.sessionsIncluded} sessions/term
+                          {!!coach.termPlan.freeSessions && <span className="text-emerald-600"> +{coach.termPlan.freeSessions} free</span>}
+                        </p>
                       </div>
                     )}
                   </div>

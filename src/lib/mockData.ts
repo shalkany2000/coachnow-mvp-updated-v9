@@ -54,6 +54,17 @@ export interface VerificationChecklist {
   notes?: string; // private, admin-only record of what was checked and when
 }
 
+// A package tier - the academy sets the price and how many sessions it
+// actually covers (8/month and 24/term are sensible defaults shown in the
+// UI, but academies can set whatever real number matches their own
+// program). freeSessions are bonus sessions on top, included at no extra
+// cost - a common way academies sweeten a package deal.
+export interface PricingPlan {
+  price: number;
+  sessionsIncluded: number;
+  freeSessions?: number;
+}
+
 export interface Coach {
   id: string;
   userId: string;
@@ -62,8 +73,9 @@ export interface Coach {
   phone?: string;
   sportType: string;
   pricePerHour: number; // per-session price - always required, the baseline tier
-  pricePerMonth?: number; // optional monthly package price
-  pricePerTerm?: number; // optional 3-month package price
+  monthlyPlan?: PricingPlan | null; // optional monthly package - sessions included is academy-editable, not fixed
+  termPlan?: PricingPlan | null; // optional 3-month term package
+  isPrivateTraining?: boolean; // shows a "Private 1-to-1 Training" label near the price
   location: string;
   rating: number;
   reviewCount: number;
@@ -140,6 +152,8 @@ export interface Booking {
   rescheduledFrom?: { date: string; time: string }; // the original slot, for an audit trail
   trainingAddress?: string; // where the coach should actually go for this specific session
   packageType?: 'session' | 'month' | 'term'; // which pricing tier this booking was made under
+  sessionsIncluded?: number; // snapshot of the plan's session count at booking time - the academy's
+  freeSessions?: number;     // plan could change later, so this is captured, not looked up live
   paid: boolean;
   paidAt?: string;
   price: number;

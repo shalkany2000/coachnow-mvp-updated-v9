@@ -58,8 +58,15 @@ export function CoachProfileSetup() {
     bio: existingCoach?.bio || '',
     sportType: existingCoach?.sportType || '',
     pricePerHour: existingCoach?.pricePerHour?.toString() || '',
-    pricePerMonth: existingCoach?.pricePerMonth?.toString() || '',
-    pricePerTerm: existingCoach?.pricePerTerm?.toString() || '',
+    isPrivateTraining: existingCoach?.isPrivateTraining || false,
+    monthlyEnabled: !!existingCoach?.monthlyPlan,
+    monthlyPrice: existingCoach?.monthlyPlan?.price?.toString() || '',
+    monthlySessions: existingCoach?.monthlyPlan?.sessionsIncluded?.toString() || '8',
+    monthlyFree: existingCoach?.monthlyPlan?.freeSessions?.toString() || '',
+    termEnabled: !!existingCoach?.termPlan,
+    termPrice: existingCoach?.termPlan?.price?.toString() || '',
+    termSessions: existingCoach?.termPlan?.sessionsIncluded?.toString() || '24',
+    termFree: existingCoach?.termPlan?.freeSessions?.toString() || '',
     location: existingCoach?.location || '',
     experience: existingCoach?.experience || '',
     avatar: existingCoach?.avatar || '',
@@ -77,8 +84,15 @@ export function CoachProfileSetup() {
         bio: existingCoach.bio,
         sportType: existingCoach.sportType,
         pricePerHour: existingCoach.pricePerHour.toString(),
-        pricePerMonth: existingCoach.pricePerMonth?.toString() || '',
-        pricePerTerm: existingCoach.pricePerTerm?.toString() || '',
+        isPrivateTraining: existingCoach.isPrivateTraining || false,
+        monthlyEnabled: !!existingCoach.monthlyPlan,
+        monthlyPrice: existingCoach.monthlyPlan?.price?.toString() || '',
+        monthlySessions: existingCoach.monthlyPlan?.sessionsIncluded?.toString() || '8',
+        monthlyFree: existingCoach.monthlyPlan?.freeSessions?.toString() || '',
+        termEnabled: !!existingCoach.termPlan,
+        termPrice: existingCoach.termPlan?.price?.toString() || '',
+        termSessions: existingCoach.termPlan?.sessionsIncluded?.toString() || '24',
+        termFree: existingCoach.termPlan?.freeSessions?.toString() || '',
         location: existingCoach.location,
         experience: existingCoach.experience,
         avatar: existingCoach.avatar,
@@ -171,6 +185,14 @@ export function CoachProfileSetup() {
       setError(`${invalidDay} has a block where the end time isn't after the start time.`);
       return;
     }
+    if (form.monthlyEnabled && (!form.monthlyPrice.trim() || !form.monthlySessions.trim())) {
+      setError('Set a price and number of sessions for the monthly plan, or turn it off.');
+      return;
+    }
+    if (form.termEnabled && (!form.termPrice.trim() || !form.termSessions.trim())) {
+      setError('Set a price and number of sessions for the term plan, or turn it off.');
+      return;
+    }
     setLoading(true);
     try {
       // availability/availabilityStart/End are kept as a quick summary
@@ -185,8 +207,21 @@ export function CoachProfileSetup() {
         bio: form.bio,
         sportType: form.sportType,
         pricePerHour: parseInt(form.pricePerHour) || 0,
-        ...(form.pricePerMonth.trim() ? { pricePerMonth: parseInt(form.pricePerMonth) } : {}),
-        ...(form.pricePerTerm.trim() ? { pricePerTerm: parseInt(form.pricePerTerm) } : {}),
+        isPrivateTraining: form.isPrivateTraining,
+        ...(form.monthlyEnabled ? {
+          monthlyPlan: {
+            price: parseInt(form.monthlyPrice) || 0,
+            sessionsIncluded: parseInt(form.monthlySessions) || 0,
+            ...(form.monthlyFree.trim() ? { freeSessions: parseInt(form.monthlyFree) } : {}),
+          },
+        } : { monthlyPlan: null }),
+        ...(form.termEnabled ? {
+          termPlan: {
+            price: parseInt(form.termPrice) || 0,
+            sessionsIncluded: parseInt(form.termSessions) || 0,
+            ...(form.termFree.trim() ? { freeSessions: parseInt(form.termFree) } : {}),
+          },
+        } : { termPlan: null }),
         location: form.location,
         experience: form.experience,
         avatar: form.avatar,
@@ -360,20 +395,6 @@ export function CoachProfileSetup() {
                   placeholder="e.g. 250"
                 />
                 <Input
-                  label="Price per Month (AED, optional)"
-                  type="number"
-                  value={form.pricePerMonth}
-                  onChange={e => setForm(p => ({ ...p, pricePerMonth: e.target.value }))}
-                  placeholder="e.g. 800"
-                />
-                <Input
-                  label="Price per Term — 3 Months (AED, optional)"
-                  type="number"
-                  value={form.pricePerTerm}
-                  onChange={e => setForm(p => ({ ...p, pricePerTerm: e.target.value }))}
-                  placeholder="e.g. 2200"
-                />
-                <Input
                   label="Established Since"
                   value={form.experience}
                   onChange={e => setForm(p => ({ ...p, experience: e.target.value }))}
@@ -394,9 +415,103 @@ export function CoachProfileSetup() {
                   placeholder="Select duration"
                 />
               </div>
-              <p className="text-xs text-gray-400 mt-3">
-                Leave monthly or term pricing blank if you only offer single sessions. Customers will be able
-                to choose whichever option you've set when they book.
+
+              <label className="flex items-center gap-2.5 cursor-pointer mt-5 pt-5 border-t border-gray-100">
+                <input
+                  type="checkbox"
+                  checked={form.isPrivateTraining}
+                  onChange={(e) => setForm(p => ({ ...p, isPrivateTraining: e.target.checked }))}
+                  className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                />
+                <span className="text-sm text-gray-700">
+                  This is <strong>private 1-to-1 training</strong> (not a group class)
+                </span>
+              </label>
+
+              {/* Monthly Plan */}
+              <div className="mt-5 pt-5 border-t border-gray-100">
+                <label className="flex items-center justify-between cursor-pointer mb-3">
+                  <span className="text-sm font-bold text-gray-900">Monthly Plan</span>
+                  <span className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${form.monthlyEnabled ? 'bg-blue-600' : 'bg-gray-300'}`}>
+                    <input
+                      type="checkbox"
+                      checked={form.monthlyEnabled}
+                      onChange={(e) => setForm(p => ({ ...p, monthlyEnabled: e.target.checked }))}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${form.monthlyEnabled ? 'translate-x-4' : ''}`} />
+                  </span>
+                </label>
+                {form.monthlyEnabled && (
+                  <div className="grid grid-cols-3 gap-2.5">
+                    <Input
+                      label="Price (AED)"
+                      type="number"
+                      value={form.monthlyPrice}
+                      onChange={e => setForm(p => ({ ...p, monthlyPrice: e.target.value }))}
+                      placeholder="e.g. 800"
+                    />
+                    <Input
+                      label="Sessions"
+                      type="number"
+                      value={form.monthlySessions}
+                      onChange={e => setForm(p => ({ ...p, monthlySessions: e.target.value }))}
+                      placeholder="8"
+                    />
+                    <Input
+                      label="Free Sessions"
+                      type="number"
+                      value={form.monthlyFree}
+                      onChange={e => setForm(p => ({ ...p, monthlyFree: e.target.value }))}
+                      placeholder="0"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Term Plan */}
+              <div className="mt-5 pt-5 border-t border-gray-100">
+                <label className="flex items-center justify-between cursor-pointer mb-3">
+                  <span className="text-sm font-bold text-gray-900">3-Month Term Plan</span>
+                  <span className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${form.termEnabled ? 'bg-blue-600' : 'bg-gray-300'}`}>
+                    <input
+                      type="checkbox"
+                      checked={form.termEnabled}
+                      onChange={(e) => setForm(p => ({ ...p, termEnabled: e.target.checked }))}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${form.termEnabled ? 'translate-x-4' : ''}`} />
+                  </span>
+                </label>
+                {form.termEnabled && (
+                  <div className="grid grid-cols-3 gap-2.5">
+                    <Input
+                      label="Price (AED)"
+                      type="number"
+                      value={form.termPrice}
+                      onChange={e => setForm(p => ({ ...p, termPrice: e.target.value }))}
+                      placeholder="e.g. 2200"
+                    />
+                    <Input
+                      label="Sessions"
+                      type="number"
+                      value={form.termSessions}
+                      onChange={e => setForm(p => ({ ...p, termSessions: e.target.value }))}
+                      placeholder="24"
+                    />
+                    <Input
+                      label="Free Sessions"
+                      type="number"
+                      value={form.termFree}
+                      onChange={e => setForm(p => ({ ...p, termFree: e.target.value }))}
+                      placeholder="0"
+                    />
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-gray-400 mt-4">
+                Set the real number of sessions each plan actually includes — 8/month and 24/term are just
+                starting suggestions. Add free sessions to sweeten a package without changing its price.
               </p>
             </Card>
 
