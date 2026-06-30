@@ -45,10 +45,20 @@ export function CoachCard({ coach }: { coach: Coach }) {
               )}
             </div>
             <div className="text-right flex-shrink-0">
-              <p className="text-xl font-bold text-blue-600">AED {coach.pricePerHour}</p>
-              <p className="text-xs text-gray-400">per session</p>
-              {(coach.monthlyPlan || coach.termPlan) && (
-                <p className="text-xs text-emerald-600 font-semibold mt-0.5">+ packages available</p>
+              {coach.monthlyPlan ? (
+                <>
+                  <p className="text-xl font-bold text-blue-600">AED {coach.monthlyPlan.price}</p>
+                  <p className="text-xs text-gray-400">per month</p>
+                  <p className="text-xs text-gray-400">AED {coach.pricePerHour}/session</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-xl font-bold text-blue-600">AED {coach.pricePerHour}</p>
+                  <p className="text-xs text-gray-400">per session</p>
+                </>
+              )}
+              {coach.termPlan && (
+                <p className="text-xs text-emerald-600 font-semibold mt-0.5">+ term plan available</p>
               )}
             </div>
           </div>

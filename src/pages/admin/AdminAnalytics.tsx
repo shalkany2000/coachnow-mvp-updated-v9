@@ -7,7 +7,7 @@ import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Card } from '../../components/ui/Card';
 
 const SPORT_COLORS: Record<string, string> = {
-  Swimming: '#3b82f6', Football: '#10b981', Gym: '#ef4444', Tennis: '#a855f7', Basketball: '#f59e0b', Padel: '#94a3b8',
+  Swimming: '#3b82f6', Football: '#10b981', Gym: '#ef4444', Tennis: '#a855f7', Basketball: '#f59e0b', Padel: '#94a3b8', Gymnastics: '#ec4899', Cricket: '#14b8a6',
 };
 
 export function AdminAnalytics() {

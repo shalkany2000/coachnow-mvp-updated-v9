@@ -5,7 +5,7 @@ import { useCoaches } from '../../contexts/CoachContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useReviews } from '../../contexts/ReviewContext';
 import { isSeedCoach, isSportLive } from '../../lib/sports';
-import { DAY_KEYS } from '../../lib/mockData';
+import { DAY_KEYS, formatAcademyLocation, buildAcademyLocationSearchText } from '../../lib/mockData';
 import { buildMapLink } from '../../lib/config';
 import { Navbar } from '../../components/layout/Navbar';
 import { Button } from '../../components/ui/Button';
@@ -14,7 +14,7 @@ import { Card } from '../../components/ui/Card';
 import { formatTime, formatRelativeTime } from '../../utils/time';
 
 const sportColors: Record<string, 'blue' | 'green' | 'yellow' | 'red' | 'gray' | 'purple'> = {
-  Swimming: 'blue', Football: 'green', Gym: 'red', Tennis: 'purple', Basketball: 'yellow', Padel: 'gray',
+  Swimming: 'blue', Football: 'green', Gym: 'red', Tennis: 'purple', Basketball: 'yellow', Padel: 'gray', Gymnastics: 'purple', Cricket: 'green',
 };
 
 export function CoachProfilePage() {
@@ -188,14 +188,14 @@ export function CoachProfilePage() {
                   {coach.locations.map((loc, i) => (
                     <a
                       key={i}
-                      href={buildMapLink(loc)}
+                      href={buildMapLink(buildAcademyLocationSearchText(loc))}
                       target="_blank"
                       rel="noreferrer"
                       className="flex items-start gap-2.5 bg-gray-50 hover:bg-gray-100 rounded-xl px-3.5 py-3 transition-colors"
                     >
                       <MapPin className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-sm text-gray-700">{loc}</p>
+                        <p className="text-sm text-gray-700">{formatAcademyLocation(loc)}</p>
                         <p className="text-xs font-semibold text-blue-600 mt-0.5">View on map →</p>
                       </div>
                     </a>
@@ -285,19 +285,26 @@ export function CoachProfilePage() {
                     Private 1-to-1 Training
                   </p>
                 )}
-                <div className="text-3xl font-black text-blue-600">AED {coach.pricePerHour}</div>
-                <div className="text-sm text-gray-400 mt-1">per session</div>
+                {coach.monthlyPlan ? (
+                  <>
+                    <div className="text-3xl font-black text-blue-600">AED {coach.monthlyPlan.price}</div>
+                    <div className="text-sm text-gray-400 mt-1">
+                      per month · {coach.monthlyPlan.sessionsIncluded} sessions
+                      {!!coach.monthlyPlan.freeSessions && <span className="text-emerald-600"> +{coach.monthlyPlan.freeSessions} free</span>}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-3xl font-black text-blue-600">AED {coach.pricePerHour}</div>
+                    <div className="text-sm text-gray-400 mt-1">per session</div>
+                  </>
+                )}
                 {(coach.monthlyPlan || coach.termPlan) && (
                   <div className="flex items-center justify-center gap-3 mt-2.5 pt-2.5 border-t border-gray-100">
-                    {coach.monthlyPlan && (
-                      <div className="text-center">
-                        <p className="text-sm font-bold text-gray-700">AED {coach.monthlyPlan.price}</p>
-                        <p className="text-xs text-gray-400">
-                          {coach.monthlyPlan.sessionsIncluded} sessions/mo
-                          {!!coach.monthlyPlan.freeSessions && <span className="text-emerald-600"> +{coach.monthlyPlan.freeSessions} free</span>}
-                        </p>
-                      </div>
-                    )}
+                    <div className="text-center">
+                      <p className="text-sm font-bold text-gray-700">AED {coach.pricePerHour}</p>
+                      <p className="text-xs text-gray-400">per session</p>
+                    </div>
                     {coach.termPlan && (
                       <div className="text-center">
                         <p className="text-sm font-bold text-gray-700">AED {coach.termPlan.price}</p>

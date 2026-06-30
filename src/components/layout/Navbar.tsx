@@ -156,7 +156,7 @@ export function Navbar() {
 
       {/* Mobile Menu */}
       {menuOpen && (
-        <div className="md:hidden border-t border-gray-100 bg-white px-4 py-4 space-y-3">
+        <div className="md:hidden border-t border-gray-100 bg-white px-4 py-4 space-y-3 shadow-md">
           <Link to="/coaches" className="block text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>
             Find Academies
           </Link>
@@ -170,7 +170,7 @@ export function Navbar() {
               </button>
             </>
           ) : (
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-3 pt-3 mt-1 border-t border-gray-100">
               <Button variant="outline" fullWidth onClick={() => { navigate('/login'); setMenuOpen(false); }}>Log In</Button>
               <Button fullWidth onClick={() => { navigate('/register'); setMenuOpen(false); }}>Sign Up</Button>
             </div>

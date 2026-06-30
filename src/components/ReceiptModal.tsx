@@ -1,4 +1,4 @@
-import { X, CheckCircle2, Dumbbell } from 'lucide-react';
+import { X, CheckCircle2 } from 'lucide-react';
 import { Booking } from '../lib/mockData';
 import { formatTime } from '../utils/time';
 
@@ -33,8 +33,8 @@ export function ReceiptModal({ booking, onClose }: ReceiptModalProps) {
           >
             <X className="w-5 h-5" />
           </button>
-          <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center mx-auto mb-2">
-            <Dumbbell className="w-5 h-5 text-white" />
+          <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center mx-auto mb-2 p-1.5">
+            <img src="/images/logo-icon.png" alt="" className="w-full h-full object-contain" />
           </div>
           <p className="font-bold text-white text-lg">CoachNow</p>
           <p className="text-blue-100 text-xs mt-0.5">Dubai, United Arab Emirates</p>

@@ -35,7 +35,7 @@ export function ParentBookings() {
     if (activeTab === 'Declined') return b.status === 'rejected';
     if (activeTab === 'Cancelled') return b.status === 'cancelled';
     return true;
-  });
+  }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Parent Dashboard">

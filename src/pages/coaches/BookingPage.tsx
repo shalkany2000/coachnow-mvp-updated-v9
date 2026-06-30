@@ -12,7 +12,8 @@ import { Navbar } from '../../components/layout/Navbar';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { formatTime, generateSlots } from '../../utils/time';
-import { buildAdminWhatsAppLink, buildWhatsAppLink, buildMapLink, isMapLink, VAT_RATE, SERVICE_FEE_AED } from '../../lib/config';
+import { buildAdminWhatsAppLink, buildWhatsAppLink, buildMapLink, isMapLink, VAT_RATE, SERVICE_FEE_AED, REFERRAL_DISCOUNT_CAP_AED } from '../../lib/config';
+import { formatAcademyLocation, buildAcademyLocationSearchText } from '../../lib/mockData';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -27,7 +28,9 @@ export function BookingPage() {
 
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
-  const [packageType, setPackageType] = useState<'session' | 'month' | 'term'>('session');
+  const [packageType, setPackageType] = useState<'session' | 'month' | 'term'>(
+    coach?.monthlyPlan ? 'month' : 'session'
+  );
   const [notes, setNotes] = useState('');
   const [trainingAddress, setTrainingAddress] = useState(currentUser?.homeAddress || '');
   const [trainingMode, setTrainingMode] = useState<'at_academy' | 'at_home'>(
@@ -111,7 +114,10 @@ export function BookingPage() {
     ? Math.round(originalPrice * (settings.firstBookingDiscountPercent / 100))
     : 0;
   const referralDiscountAmount = referralDiscountApplies
-    ? Math.round(originalPrice * ((currentUser?.pendingReferralDiscountPercent || 0) / 100))
+    ? Math.min(
+        Math.round(originalPrice * ((currentUser?.pendingReferralDiscountPercent || 0) / 100)),
+        REFERRAL_DISCOUNT_CAP_AED
+      )
     : 0;
 
   // If both are somehow available (e.g. someone shares their code before
@@ -181,8 +187,9 @@ export function BookingPage() {
     ? `${packageType === 'month' ? 'Monthly' : '3-month term'} package — ${selectedPlan.sessionsIncluded}${selectedPlan.freeSessions ? ` + ${selectedPlan.freeSessions} free` : ''} sessions`
     : 'Single session';
 
-  const finalTrainingAddress = trainingMode === 'at_academy' && coach.locations && coach.locations[selectedLocationIndex]
-    ? coach.locations[selectedLocationIndex]
+  const selectedAcademyLocation = coach.locations && coach.locations[selectedLocationIndex];
+  const finalTrainingAddress = trainingMode === 'at_academy' && selectedAcademyLocation
+    ? formatAcademyLocation(selectedAcademyLocation)
     : trainingAddress;
 
   const adminMessage = `Hi, I just booked a session on CoachNow and I'd like to pay.\n\nCoach: ${coach.name}\nSport: ${coach.sportType}\nPlan: ${packageLabel}\nDate: ${date}\nTime: ${time ? formatTime(time) : ''}\n${packageType === 'session' ? `Duration: ${coach.sessionDuration} min\n` : ''}${discountApplies ? `Session price: AED ${originalPrice} - ${discountLabel} = AED ${finalPrice}\n` : `Session price: AED ${finalPrice}\n`}Service fee: AED ${serviceFee}\nVAT (5%): AED ${vatAmount}\n${creditApplied > 0 ? `Subtotal: AED ${totalCharged}\nCredit applied: -AED ${creditApplied}\n` : ''}Total to pay: AED ${amountDueNow}`;
@@ -435,16 +442,6 @@ export function BookingPage() {
                 <Card>
                   <h2 className="font-bold text-gray-900 mb-3">Choose Your Plan</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => setPackageType('session')}
-                      className={`text-left p-3 rounded-xl border-2 transition-all ${
-                        packageType === 'session' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <p className="text-sm font-bold text-gray-900">Single Session</p>
-                      <p className="text-xs text-gray-500 mt-0.5">AED {coach.pricePerHour} / session</p>
-                    </button>
                     {coach.monthlyPlan && (
                       <button
                         type="button"
@@ -475,6 +472,16 @@ export function BookingPage() {
                         )}
                       </button>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => setPackageType('session')}
+                      className={`text-left p-3 rounded-xl border-2 transition-all ${
+                        packageType === 'session' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <p className="text-sm font-bold text-gray-900">Single Session</p>
+                      <p className="text-xs text-gray-500 mt-0.5">AED {coach.pricePerHour} / session</p>
+                    </button>
                   </div>
                   {selectedPlan && (
                     <p className="text-xs text-gray-500 mt-3 bg-gray-50 rounded-lg px-3 py-2">
@@ -611,9 +618,9 @@ export function BookingPage() {
                       >
                         <MapPin className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
                         <div className="min-w-0">
-                          <p className="text-sm text-gray-700">{loc}</p>
+                          <p className="text-sm text-gray-700">{formatAcademyLocation(loc)}</p>
                           <a
-                            href={buildMapLink(loc)}
+                            href={buildMapLink(buildAcademyLocationSearchText(loc))}
                             target="_blank"
                             rel="noreferrer"
                             onClick={(e) => e.stopPropagation()}

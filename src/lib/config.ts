@@ -14,6 +14,11 @@ export const VAT_RATE = 0.05;
 // service fees work.
 export const SERVICE_FEE_AED = 7;
 
+// The referral reward is still a percentage of the session price (set in
+// Admin Settings), but capped at this flat amount regardless — keeps the
+// program's cost predictable even on a high-value session/package.
+export const REFERRAL_DISCOUNT_CAP_AED = 35;
+
 // If the customer pasted a real Google Maps link (the kind you get from
 // tapping "Share" on a pinned location in the Maps app), this is true —
 // and that link should be used directly rather than re-wrapped in a text

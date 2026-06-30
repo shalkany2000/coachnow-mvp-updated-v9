@@ -32,7 +32,8 @@ export function CoachDashboard() {
     c.userId === currentUser?.id || c.email === currentUser?.email
   );
 
-  const coachBookings = coachProfile ? bookings.filter(b => b.coachId === coachProfile.id) : [];
+  const coachBookings = (coachProfile ? bookings.filter(b => b.coachId === coachProfile.id) : [])
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   const pendingBookings = coachBookings.filter(b => b.status === 'pending');
   const acceptedBookings = coachBookings.filter(b => b.status === 'accepted');
   const completedBookings = coachBookings.filter(b => b.status === 'completed');

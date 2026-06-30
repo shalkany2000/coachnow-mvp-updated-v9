@@ -17,13 +17,15 @@ const SPORT_ICONS: Record<string, string> = {
   Tennis: '🎾',
   Basketball: '🏀',
   Padel: '🏓',
+  Gymnastics: '🤸',
+  Cricket: '🏏',
 };
 
 const stats = [
   { value: '50+', label: 'Academies & Gyms', icon: <Users className="w-5 h-5" /> },
   { value: '4.8★', label: 'Average Rating', icon: <Star className="w-5 h-5" /> },
   { value: '1,500+', label: 'Sessions Booked', icon: <Award className="w-5 h-5" /> },
-  { value: '6', label: 'Sports Covered', icon: <Zap className="w-5 h-5" /> },
+  { value: '8', label: 'Sports Covered', icon: <Zap className="w-5 h-5" /> },
 ];
 
 const howItWorks = [
@@ -276,9 +278,7 @@ export function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <Dumbbell className="w-4 h-4 text-white" />
-              </div>
+              <img src="/images/logo-icon.png" alt="" className="w-8 h-8" />
               <span className="font-bold text-white text-lg">CoachNow</span>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm">

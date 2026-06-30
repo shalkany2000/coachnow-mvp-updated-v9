@@ -35,7 +35,10 @@ export function ParentHome() {
   const { coaches } = useCoaches();
 
   const bookings = currentUser ? getBookingsForParent(currentUser.id, currentUser.email) : [];
-  const upcomingBookings = bookings.filter(b => b.status === 'pending' || b.status === 'accepted').slice(0, 3);
+  const upcomingBookings = bookings
+    .filter(b => b.status === 'pending' || b.status === 'accepted')
+    .sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime())
+    .slice(0, 3);
   const topCoaches = visibleCoaches(coaches).filter(c => c.verified && !c.onLeave).sort((a, b) => b.rating - a.rating).slice(0, 3);
 
   const firstName = currentUser?.name.split(' ')[0] || 'there';

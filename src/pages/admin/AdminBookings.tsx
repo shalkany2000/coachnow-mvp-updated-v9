@@ -45,7 +45,7 @@ export function AdminBookings() {
       b.coachName.toLowerCase().includes(search.toLowerCase()) ||
       b.sportType.toLowerCase().includes(search.toLowerCase());
     return matchTab && matchSearch;
-  });
+  }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const totalCommission = bookings.filter(b => b.status === 'completed').reduce((s, b) => s + b.commission, 0);
 

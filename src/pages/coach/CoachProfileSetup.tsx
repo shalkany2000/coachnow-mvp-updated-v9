@@ -8,7 +8,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
-import { SPORT_TYPES, UAE_EMIRATES, DAY_KEYS, DayKey, TimeBlock, Coach } from '../../lib/mockData';
+import { SPORT_TYPES, UAE_EMIRATES, UAE_AREAS_BY_EMIRATE, DAY_KEYS, DayKey, TimeBlock, Coach, AcademyLocation } from '../../lib/mockData';
 import { isMapLink } from '../../lib/config';
 
 const sidebarItems = [
@@ -114,9 +114,19 @@ export function CoachProfileSetup() {
   const removePhoto = (index: number) =>
     setForm((p) => ({ ...p, photos: p.photos.filter((_, i) => i !== index) }));
 
-  const addLocation = () => setForm((p) => ({ ...p, locations: [...p.locations, ''] }));
-  const updateLocation = (index: number, value: string) =>
-    setForm((p) => ({ ...p, locations: p.locations.map((loc, i) => (i === index ? value : loc)) }));
+  const addLocation = () =>
+    setForm((p) => ({ ...p, locations: [...p.locations, { emirate: 'Dubai', area: '', addressDetail: '' } as AcademyLocation] }));
+  const updateLocationField = (index: number, field: keyof AcademyLocation, value: string) =>
+    setForm((p) => ({
+      ...p,
+      locations: p.locations.map((loc, i) => {
+        if (i !== index) return loc;
+        // Switching emirate resets the area, since the previous area
+        // choice almost certainly doesn't exist in the new emirate's list.
+        if (field === 'emirate') return { ...loc, emirate: value, area: '' };
+        return { ...loc, [field]: value };
+      }),
+    }));
   const removeLocation = (index: number) =>
     setForm((p) => ({ ...p, locations: p.locations.filter((_, i) => i !== index) }));
 
@@ -235,7 +245,9 @@ export function CoachProfileSetup() {
         experience: form.experience,
         avatar: form.avatar,
         photos: form.photos.map((p) => p.trim()).filter(Boolean),
-        locations: form.locations.map((l) => l.trim()).filter(Boolean),
+        locations: form.locations
+          .map((l) => ({ emirate: l.emirate, area: l.area.trim(), addressDetail: l.addressDetail?.trim() || undefined }))
+          .filter((l) => l.area), // a location with no area chosen yet isn't a real saved branch
         availability: workingDays,
         availabilityStart: starts.sort()[0],
         availabilityEnd: ends.sort().slice(-1)[0],
@@ -380,36 +392,73 @@ export function CoachProfileSetup() {
                 <div>
                   <label className="text-sm font-medium text-gray-700 block mb-1.5">Your Locations (optional)</label>
                   <p className="text-xs text-gray-400 mb-2.5">
-                    Where customers come to train with you in person — add one or more branches. For each, open
-                    Google Maps, find the spot, tap <strong>Share</strong> → <strong>Copy link</strong>, and paste
-                    it here. A typed address works too.
+                    Where customers come to train with you in person — add one or more branches. Pick the emirate,
+                    then the area; if your area isn't listed, choose "Other" and type it in.
                   </p>
-                  <div className="space-y-2.5">
-                    {form.locations.map((loc, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={loc}
-                          onChange={(e) => updateLocation(i, e.target.value)}
-                          placeholder="Paste a Maps link, or type your branch address"
-                          className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeLocation(i)}
-                          aria-label="Remove location"
-                          className="text-gray-400 hover:text-red-500 p-1.5 flex-shrink-0"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                    {form.locations.some((l) => isMapLink(l)) && (
-                      <p className="text-xs text-emerald-600 font-medium flex items-center gap-1">
-                        <CheckCircle className="w-3.5 h-3.5" />
-                        Maps link detected — customers will see your exact pin.
-                      </p>
-                    )}
+                  <div className="space-y-3">
+                    {form.locations.map((loc, i) => {
+                      const areaOptions = UAE_AREAS_BY_EMIRATE[loc.emirate] || [];
+                      const isKnownArea = areaOptions.includes(loc.area);
+                      // 'Other' is itself a real entry in every area list, so the
+                      // dropdown can hold it directly — no need to convert it to
+                      // an empty string and back, which was causing the
+                      // selection to silently revert to the placeholder.
+                      const selectValue = isKnownArea ? loc.area : (loc.area ? 'Other' : '');
+                      const showCustomAreaInput = selectValue === 'Other';
+                      return (
+                        <div key={i} className="border border-gray-200 rounded-xl p-3 space-y-2.5">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="grid grid-cols-2 gap-2 flex-1">
+                              <select
+                                value={loc.emirate}
+                                onChange={(e) => updateLocationField(i, 'emirate', e.target.value)}
+                                className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                              >
+                                {UAE_EMIRATES.map((em) => <option key={em} value={em}>{em}</option>)}
+                              </select>
+                              <select
+                                value={selectValue}
+                                onChange={(e) => updateLocationField(i, 'area', e.target.value)}
+                                className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                              >
+                                <option value="" disabled>Select area</option>
+                                {areaOptions.map((a) => <option key={a} value={a}>{a}</option>)}
+                              </select>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeLocation(i)}
+                              aria-label="Remove location"
+                              className="text-gray-400 hover:text-red-500 p-1.5 flex-shrink-0"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                          {showCustomAreaInput && (
+                            <input
+                              type="text"
+                              value={isKnownArea ? '' : loc.area}
+                              onChange={(e) => updateLocationField(i, 'area', e.target.value)}
+                              placeholder="Type your area name"
+                              className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                            />
+                          )}
+                          <input
+                            type="text"
+                            value={loc.addressDetail || ''}
+                            onChange={(e) => updateLocationField(i, 'addressDetail', e.target.value)}
+                            placeholder="Optional: building name, or paste a Google Maps link"
+                            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                          />
+                          {loc.addressDetail && isMapLink(loc.addressDetail) && (
+                            <p className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+                              <CheckCircle className="w-3.5 h-3.5" />
+                              Maps link detected — customers will see your exact pin.
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                   <button
                     type="button"

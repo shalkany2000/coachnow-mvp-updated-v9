@@ -3,6 +3,7 @@ import { Gift, Copy, Check } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { buildReferralLink } from '../lib/referral';
+import { REFERRAL_DISCOUNT_CAP_AED } from '../lib/config';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 
@@ -39,7 +40,8 @@ export function ReferralCard() {
           <div>
             <h3 className="font-bold">Refer a Friend, Earn {settings.referralDiscountPercent}% Off</h3>
             <p className="text-pink-100 text-sm mt-0.5">
-              Share your code — when they book their first session, you get {settings.referralDiscountPercent}% off your next one.
+              Share your code — when they book their first session, you get {settings.referralDiscountPercent}% off
+              your next one (up to AED {REFERRAL_DISCOUNT_CAP_AED}).
             </p>
           </div>
         </div>

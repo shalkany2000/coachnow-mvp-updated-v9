@@ -65,6 +65,31 @@ export interface PricingPlan {
   freeSessions?: number;
 }
 
+// A single physical branch — emirate and area are picked from real,
+// curated dropdowns (with "Other" as an escape hatch for an area not in
+// the list); addressDetail is optional free text or a pasted Google Maps
+// link for the exact building/street, layered on top of the area choice.
+export interface AcademyLocation {
+  emirate: string;
+  area: string; // one of UAE_AREAS_BY_EMIRATE[emirate], or a custom value if "Other" was picked
+  addressDetail?: string;
+}
+
+// Human-readable display string for a location, e.g. "Dubai Marina, Dubai"
+// or, if extra detail was provided, "Dubai Marina, Dubai — Building 4, near the metro".
+export function formatAcademyLocation(loc: AcademyLocation): string {
+  const base = `${loc.area}, ${loc.emirate}`;
+  return loc.addressDetail ? `${base} — ${loc.addressDetail}` : base;
+}
+
+// What actually gets opened when a customer taps "View on map" — a pasted
+// Maps link or specific address in addressDetail takes priority (most
+// precise), falling back to a text search on the area + emirate if no
+// extra detail was given.
+export function buildAcademyLocationSearchText(loc: AcademyLocation): string {
+  return loc.addressDetail || `${loc.area}, ${loc.emirate}, UAE`;
+}
+
 export interface Coach {
   id: string;
   userId: string;
@@ -82,7 +107,7 @@ export interface Coach {
   bio: string;
   avatar: string; // primary/cover photo
   photos?: string[]; // additional gallery photos, pasted links same as avatar
-  locations?: string[]; // physical branch addresses/Maps links - where customers go for in-person training
+  locations?: AcademyLocation[]; // physical branches - where customers go for in-person training
   experience: string;
   languages: string[];
   availability: string[];
@@ -173,6 +198,8 @@ export const SPORT_TYPES = [
   'Tennis',
   'Basketball',
   'Padel',
+  'Gymnastics',
+  'Cricket',
 ];
 
 export const UAE_EMIRATES = [
@@ -184,6 +211,41 @@ export const UAE_EMIRATES = [
   'Ras Al Khaimah',
   'Fujairah',
 ];
+
+// Real, commonly known areas/communities within each emirate — covers the
+// most likely places an academy or gym would actually be based. "Other"
+// is always appended last so an academy in a less common area can still
+// type their own area name manually rather than being blocked.
+export const UAE_AREAS_BY_EMIRATE: Record<string, string[]> = {
+  'Dubai': [
+    'Dubai Marina', 'JBR', 'Downtown Dubai', 'Business Bay', 'Jumeirah',
+    'Al Barsha', 'Al Quoz', 'Deira', 'Bur Dubai', 'Mirdif', 'Arabian Ranches',
+    'Al Nahda', 'Al Qusais', 'Jumeirah Village Circle (JVC)', 'Dubai Hills Estate',
+    'Dubai Sports City', 'Motor City', 'Dubailand', 'Al Karama', 'Oud Metha',
+    'DIFC', 'Palm Jumeirah', 'Al Furjan', 'Discovery Gardens', 'Other',
+  ],
+  'Abu Dhabi': [
+    'Al Reem Island', 'Yas Island', 'Saadiyat Island', 'Khalifa City',
+    'Al Khalidiyah', 'Al Bateen', 'Al Raha', 'Mussafah', 'Al Mushrif',
+    'Corniche Area', 'Al Zahiyah', 'Al Shamkha', 'Other',
+  ],
+  'Sharjah': [
+    'Al Nahda', 'Al Majaz', 'Al Khan', 'Al Qasimia', 'Muwaileh',
+    'Al Taawun', 'Al Riqqa', 'University City', 'Other',
+  ],
+  'Ajman': [
+    'Al Nuaimiya', 'Al Rashidiya', 'Al Jurf', 'Al Rawda', 'Corniche Ajman', 'Other',
+  ],
+  'Umm Al Quwain': [
+    'UAQ City Centre', 'Al Salamah', 'Al Ramlah', 'Other',
+  ],
+  'Ras Al Khaimah': [
+    'Al Nakheel', 'Al Hamra Village', 'Al Marjan Island', 'Mina Al Arab', 'Other',
+  ],
+  'Fujairah': [
+    'Fujairah City', 'Al Faseel', 'Dibba', 'Other',
+  ],
+};
 
 export const mockCoaches: Coach[] = [
   {

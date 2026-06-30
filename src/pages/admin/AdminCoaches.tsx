@@ -9,7 +9,7 @@ import { Badge } from '../../components/ui/Badge';
 import { useAdminSidebarItems } from '../../hooks/useAdminSidebarItems';
 
 const sportColors: Record<string, 'blue' | 'green' | 'yellow' | 'red' | 'gray' | 'purple'> = {
-  Swimming: 'blue', Football: 'green', Gym: 'red', Tennis: 'purple', Basketball: 'yellow', Padel: 'gray',
+  Swimming: 'blue', Football: 'green', Gym: 'red', Tennis: 'purple', Basketball: 'yellow', Padel: 'gray', Gymnastics: 'purple', Cricket: 'green',
 };
 
 const DEFAULT_CHECKLIST: VerificationChecklist = {

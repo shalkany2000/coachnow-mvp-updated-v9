@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Dumbbell } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
 
 export function AcademyTermsPage() {
@@ -19,8 +19,8 @@ export function AcademyTermsPage() {
         </button>
 
         <div className="flex items-center gap-2 mb-6">
-          <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center">
-            <Dumbbell className="w-5 h-5 text-white" />
+          <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center p-1.5">
+            <img src="/images/logo-icon.png" alt="" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-xl font-black text-gray-900">Academy & Gym Partner Terms</h1>
         </div>

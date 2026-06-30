@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, Dumbbell, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth, friendlyAuthError } from '../../contexts/AuthContext';
 import { GoogleSignInButton } from '../../components/GoogleSignInButton';
 import { Button } from '../../components/ui/Button';
@@ -60,8 +60,8 @@ export function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-md">
-              <Dumbbell className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-md p-1.5">
+              <img src="/images/logo-icon.png" alt="" className="w-full h-full object-contain" />
             </div>
             <span className="font-bold text-2xl text-gray-900">Coach<span className="text-blue-600">Now</span></span>
           </Link>
