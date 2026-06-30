@@ -5,7 +5,7 @@ import { useCoaches } from '../../contexts/CoachContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useReviews } from '../../contexts/ReviewContext';
 import { isSeedCoach, isSportLive } from '../../lib/sports';
-import { DAY_KEYS, formatAcademyLocation, buildAcademyLocationSearchText } from '../../lib/mockData';
+import { DAY_KEYS, formatAcademyLocation, buildAcademyLocationSearchText, normalizeAcademyLocations } from '../../lib/mockData';
 import { buildMapLink } from '../../lib/config';
 import { Navbar } from '../../components/layout/Navbar';
 import { Button } from '../../components/ui/Button';
@@ -46,6 +46,11 @@ export function CoachProfilePage() {
     if (!currentUser) { navigate('/login'); return; }
     navigate(`/coaches/${coach.id}/book`);
   };
+
+  // Defends against locations saved before this structured emirate/area
+  // format existed (when a location was just a plain string) — without
+  // this, those older entries would crash or render blank.
+  const normalizedLocations = normalizeAcademyLocations(coach.locations);
 
   const handleShare = async () => {
     const url = window.location.href;
@@ -179,13 +184,13 @@ export function CoachProfilePage() {
             )}
 
             {/* Locations */}
-            {coach.locations && coach.locations.length > 0 && (
+            {normalizedLocations.length > 0 && (
               <Card>
                 <h2 className="text-lg font-bold text-gray-900 mb-3">
-                  {coach.locations.length > 1 ? 'Our Locations' : 'Our Location'}
+                  {normalizedLocations.length > 1 ? 'Our Locations' : 'Our Location'}
                 </h2>
                 <div className="space-y-2.5">
-                  {coach.locations.map((loc, i) => (
+                  {normalizedLocations.map((loc, i) => (
                     <a
                       key={i}
                       href={buildMapLink(buildAcademyLocationSearchText(loc))}

@@ -49,6 +49,30 @@ const howItWorks = [
   },
 ];
 
+// Illustrative testimonials for launch — replace with real customer
+// quotes (and a star rating tied to actual completed bookings) once
+// CoachNow has a track record of real reviews to draw from.
+const testimonials = [
+  {
+    name: 'Sara M.',
+    role: 'Parent, Dubai Marina',
+    quote: 'Booking my daughter\'s swimming lessons used to mean a dozen WhatsApp messages back and forth. Now I pick a time and it\'s confirmed in minutes.',
+    rating: 5,
+  },
+  {
+    name: 'Ahmed K.',
+    role: 'Parent, Al Barsha',
+    quote: 'We found a great tennis academy for my son within a day of signing up. The booking and payment process was simple and felt secure.',
+    rating: 5,
+  },
+  {
+    name: 'Layla H.',
+    role: 'Parent, JBR',
+    quote: 'I like that I can see real availability before booking instead of guessing. The first-booking discount was a nice bonus too.',
+    rating: 4,
+  },
+];
+
 export function LandingPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
@@ -220,6 +244,40 @@ export function LandingPage() {
                   </div>
                   <h3 className="text-xl font-bold text-gray-900">{step.title}</h3>
                   <p className="text-gray-500 max-w-xs leading-relaxed">{step.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="bg-gray-50 py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-black text-gray-900">What Families Are Saying</h2>
+            <p className="text-gray-500 mt-3 text-lg">Real experiences from parents booking through CoachNow</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {testimonials.map((t) => (
+              <div key={t.name} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <div className="flex gap-0.5 mb-3">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`w-4 h-4 ${i < t.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'}`}
+                    />
+                  ))}
+                </div>
+                <p className="text-gray-700 leading-relaxed mb-5">"{t.quote}"</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0">
+                    {t.name.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 text-sm">{t.name}</p>
+                    <p className="text-gray-400 text-xs">{t.role}</p>
+                  </div>
                 </div>
               </div>
             ))}

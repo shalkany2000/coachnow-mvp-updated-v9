@@ -8,7 +8,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
-import { SPORT_TYPES, UAE_EMIRATES, UAE_AREAS_BY_EMIRATE, DAY_KEYS, DayKey, TimeBlock, Coach, AcademyLocation } from '../../lib/mockData';
+import { SPORT_TYPES, UAE_EMIRATES, UAE_AREAS_BY_EMIRATE, DAY_KEYS, DayKey, TimeBlock, Coach, AcademyLocation, normalizeAcademyLocations } from '../../lib/mockData';
 import { isMapLink } from '../../lib/config';
 
 const sidebarItems = [
@@ -72,7 +72,7 @@ export function CoachProfileSetup() {
     experience: existingCoach?.experience || '',
     avatar: existingCoach?.avatar || '',
     photos: existingCoach?.photos || [],
-    locations: existingCoach?.locations || [],
+    locations: normalizeAcademyLocations(existingCoach?.locations) || [],
     weeklySchedule: deriveInitialSchedule(existingCoach),
     sessionDuration: existingCoach?.sessionDuration?.toString() || '60',
     languages: existingCoach?.languages || [],
@@ -99,7 +99,7 @@ export function CoachProfileSetup() {
         experience: existingCoach.experience,
         avatar: existingCoach.avatar,
         photos: existingCoach.photos || [],
-        locations: existingCoach.locations || [],
+        locations: normalizeAcademyLocations(existingCoach.locations),
         weeklySchedule: deriveInitialSchedule(existingCoach),
         sessionDuration: (existingCoach.sessionDuration || 60).toString(),
         languages: existingCoach.languages,

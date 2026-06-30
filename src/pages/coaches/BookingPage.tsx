@@ -13,7 +13,7 @@ import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { formatTime, generateSlots } from '../../utils/time';
 import { buildAdminWhatsAppLink, buildWhatsAppLink, buildMapLink, isMapLink, VAT_RATE, SERVICE_FEE_AED, REFERRAL_DISCOUNT_CAP_AED } from '../../lib/config';
-import { formatAcademyLocation, buildAcademyLocationSearchText } from '../../lib/mockData';
+import { formatAcademyLocation, buildAcademyLocationSearchText, normalizeAcademyLocations } from '../../lib/mockData';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -91,6 +91,10 @@ export function BookingPage() {
 
   // Get min date (today)
   const today = new Date().toISOString().split('T')[0];
+
+  // Defends against locations saved before this structured emirate/area
+  // format existed (when a location was just a plain string).
+  const normalizedLocations = normalizeAcademyLocations(coach.locations);
 
   // A parent's very first booking ever (regardless of its eventual status)
   // gets the discount — checking "do they have any prior booking at all"
@@ -187,7 +191,7 @@ export function BookingPage() {
     ? `${packageType === 'month' ? 'Monthly' : '3-month term'} package — ${selectedPlan.sessionsIncluded}${selectedPlan.freeSessions ? ` + ${selectedPlan.freeSessions} free` : ''} sessions`
     : 'Single session';
 
-  const selectedAcademyLocation = coach.locations && coach.locations[selectedLocationIndex];
+  const selectedAcademyLocation = normalizedLocations[selectedLocationIndex];
   const finalTrainingAddress = trainingMode === 'at_academy' && selectedAcademyLocation
     ? formatAcademyLocation(selectedAcademyLocation)
     : trainingAddress;
@@ -577,7 +581,7 @@ export function BookingPage() {
                   Training Location
                 </h2>
 
-                {coach.locations && coach.locations.length > 0 && (
+                {normalizedLocations.length > 0 && (
                   <div className="grid grid-cols-2 gap-2.5 mb-4">
                     <button
                       type="button"
@@ -602,12 +606,12 @@ export function BookingPage() {
                   </div>
                 )}
 
-                {trainingMode === 'at_academy' && coach.locations && coach.locations.length > 0 ? (
+                {trainingMode === 'at_academy' && normalizedLocations.length > 0 ? (
                   <div className="space-y-2">
-                    {coach.locations.length > 1 && (
+                    {normalizedLocations.length > 1 && (
                       <p className="text-xs text-gray-400 mb-1">Pick whichever branch is closest to you:</p>
                     )}
-                    {coach.locations.map((loc, i) => (
+                    {normalizedLocations.map((loc, i) => (
                       <button
                         key={i}
                         type="button"

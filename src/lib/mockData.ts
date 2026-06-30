@@ -77,8 +77,29 @@ export interface AcademyLocation {
 
 // Human-readable display string for a location, e.g. "Dubai Marina, Dubai"
 // or, if extra detail was provided, "Dubai Marina, Dubai — Building 4, near the metro".
+// Locations saved before this structured emirate/area model existed are
+// plain strings (e.g. "Dubai Marina Branch, Dubai"), not objects — reading
+// .emirate off one of those gives undefined, which is exactly what made
+// the area dropdown show no options for any academy with an
+// already-saved location. This normalizes either shape into the current
+// one, defaulting unrecognized legacy text into the addressDetail field
+// so nothing is silently lost, just needs the academy to pick a real
+// emirate/area for it once.
+export function normalizeAcademyLocations(raw: unknown): AcademyLocation[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((entry): AcademyLocation => {
+    if (typeof entry === 'string') {
+      return { emirate: 'Dubai', area: '', addressDetail: entry };
+    }
+    if (entry && typeof entry === 'object' && 'emirate' in entry && 'area' in entry) {
+      return entry as AcademyLocation;
+    }
+    return { emirate: 'Dubai', area: '', addressDetail: '' };
+  });
+}
+
 export function formatAcademyLocation(loc: AcademyLocation): string {
-  const base = `${loc.area}, ${loc.emirate}`;
+  const base = loc.area ? `${loc.area}, ${loc.emirate}` : loc.emirate;
   return loc.addressDetail ? `${base} — ${loc.addressDetail}` : base;
 }
 
