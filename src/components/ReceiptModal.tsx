@@ -74,7 +74,22 @@ export function ReceiptModal({ booking, onClose }: ReceiptModalProps) {
           <div className="bg-gray-50 rounded-xl p-3.5">
             <p className="font-semibold text-gray-900">{booking.sportType} with {booking.coachName}</p>
             <p className="text-sm text-gray-500 mt-1">{sessionDate}</p>
-            <p className="text-sm text-gray-500">{formatTime(booking.time)} · {booking.duration} min</p>
+            {booking.packageType && booking.packageType !== 'session' ? (
+              <>
+                {booking.planExpiresAt && (
+                  <p className="text-sm text-gray-500">
+                    Valid until {new Date(booking.planExpiresAt).toLocaleDateString('en-AE', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                )}
+                {booking.preferredSlots && booking.preferredSlots.length > 0 && (
+                  <p className="text-sm text-gray-500">
+                    {booking.preferredSlots.map((s) => `${s.day} ${formatTime(s.time)}`).join(', ')}
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-gray-500">{formatTime(booking.time)} · {booking.duration} min</p>
+            )}
             <p className="text-sm text-gray-500">{booking.location}</p>
           </div>
 

@@ -202,6 +202,8 @@ export interface Booking {
   packageType?: 'session' | 'month' | 'term'; // which pricing tier this booking was made under
   sessionsIncluded?: number; // snapshot of the plan's session count at booking time - the academy's
   freeSessions?: number;     // plan could change later, so this is captured, not looked up live
+  planExpiresAt?: string; // group plans only — start date + 30 days (monthly) or + 90 days (term)
+  preferredSlots?: { day: string; time: string }[]; // group plans only — which recurring weekly slots the customer intends to attend
   paid: boolean;
   paidAt?: string;
   price: number;

@@ -36,6 +36,11 @@ export function CancelBookingModal({ booking, onClose }: CancelBookingModalProps
   const outcome = { ...rawOutcome, refundCreditAmount: actual.refundCreditAmount, penaltyPercent: actual.penaltyPercent };
   const coach = getCoach(booking.coachId);
   const today = new Date().toISOString().split('T')[0];
+  // Group plans don't have one single appointment to reschedule — they run
+  // for a fixed window from a start date. Rescheduling here is only for
+  // private sessions; a group plan can still be cancelled (subject to the
+  // same notice-based credit policy, counted from its start date).
+  const isGroupPlan = !!booking.packageType && booking.packageType !== 'session';
 
   const selectedDayName = newDate ? DAY_NAMES[new Date(newDate + 'T00:00:00').getDay()] : null;
   const dayBlocks = selectedDayName ? coach?.weeklySchedule?.[selectedDayName] : undefined;
@@ -118,16 +123,16 @@ export function CancelBookingModal({ booking, onClose }: CancelBookingModalProps
               ) : outcome.tier === 'full' ? (
                 <p>You're cancelling with plenty of notice — <strong>AED {outcome.refundCreditAmount} full credit</strong> will be added to your account.</p>
               ) : outcome.tier === 'partial' ? (
-                <p>This is within {settings.cancellationFullRefundHours}h of your session — you'll get <strong>AED {outcome.refundCreditAmount} credit</strong> ({outcome.penaltyPercent}% forfeited).</p>
+                <p>This is within {settings.cancellationFullRefundHours}h of your {isGroupPlan ? "plan's start date" : 'session'} — you'll get <strong>AED {outcome.refundCreditAmount} credit</strong> ({outcome.penaltyPercent}% forfeited).</p>
               ) : (
-                <p>This is within {settings.cancellationPartialRefundHours}h of your session — <strong>no credit will be issued</strong> for this cancellation.</p>
+                <p>This is within {settings.cancellationPartialRefundHours}h of your {isGroupPlan ? "plan's start date" : 'session'} — <strong>no credit will be issued</strong> for this cancellation.</p>
               )}
             </div>
 
             {error && <p className="text-sm text-red-600 font-medium mt-3">{error}</p>}
 
             <div className="flex flex-col gap-2.5 mt-5">
-              {outcome.canReschedule && (
+              {outcome.canReschedule && !isGroupPlan && (
                 <Button variant="outline" fullWidth onClick={() => setMode('reschedule')}>
                   Reschedule instead (no penalty)
                 </Button>

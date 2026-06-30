@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MapPin, Star, Clock, CheckCircle, Globe, Calendar, ArrowLeft, Share2 } from 'lucide-react';
+import { MapPin, Star, Clock, CheckCircle, Globe, ArrowLeft, Share2 } from 'lucide-react';
 import { useCoaches } from '../../contexts/CoachContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useReviews } from '../../contexts/ReviewContext';
@@ -25,6 +25,14 @@ export function CoachProfilePage() {
   const { getReviewsForCoach } = useReviews();
   const coach = getCoach(id || '');
   const [copied, setCopied] = useState(false);
+  // Private 1-to-1 and group training are two different programs, not
+  // alternative ways to buy the same thing — so each gets its own price
+  // and its own "Book" button. The only real choice within group training
+  // is monthly vs. term, since both are just different commitment lengths
+  // of the same group program.
+  const [selectedGroupPlan, setSelectedGroupPlan] = useState<'month' | 'term'>(
+    coach?.monthlyPlan ? 'month' : 'term'
+  );
   const reviews = coach ? getReviewsForCoach(coach.id) : [];
   const isHidden = coach && isSeedCoach(coach) && !isSportLive(coach.sportType, coaches);
 
@@ -42,9 +50,14 @@ export function CoachProfilePage() {
     );
   }
 
-  const handleBook = () => {
+  const handleBookPrivate = () => {
     if (!currentUser) { navigate('/login'); return; }
-    navigate(`/coaches/${coach.id}/book`);
+    navigate(`/coaches/${coach.id}/book?plan=session`);
+  };
+
+  const handleBookGroup = () => {
+    if (!currentUser) { navigate('/login'); return; }
+    navigate(`/coaches/${coach.id}/book?plan=${selectedGroupPlan}`);
   };
 
   // Defends against locations saved before this structured emirate/area
@@ -284,49 +297,84 @@ export function CoachProfilePage() {
           {/* Booking Sidebar */}
           <div className="space-y-4">
             <Card className="sticky top-24">
-              <div className="text-center mb-6">
+              <div className="mb-6">
                 {coach.isPrivateTraining && (
-                  <p className="text-xs font-semibold text-purple-600 bg-purple-50 inline-block px-2.5 py-1 rounded-full mb-2">
+                  <p className="text-xs font-semibold text-purple-600 bg-purple-50 inline-block px-2.5 py-1 rounded-full mb-3">
                     Private 1-to-1 Training
                   </p>
                 )}
-                {coach.monthlyPlan ? (
-                  <>
-                    <div className="text-3xl font-black text-blue-600">AED {coach.monthlyPlan.price}</div>
-                    <div className="text-sm text-gray-400 mt-1">
-                      per month · {coach.monthlyPlan.sessionsIncluded} sessions
-                      {!!coach.monthlyPlan.freeSessions && <span className="text-emerald-600"> +{coach.monthlyPlan.freeSessions} free</span>}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="text-3xl font-black text-blue-600">AED {coach.pricePerHour}</div>
-                    <div className="text-sm text-gray-400 mt-1">per session</div>
-                  </>
-                )}
+
+                {/* Private 1-to-1 — always shown, since pricePerHour is required for every listing. */}
+                <div className="rounded-xl border border-gray-100 p-4">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Private 1-to-1</p>
+                  <div className="text-2xl font-black text-blue-600">AED {coach.pricePerHour}</div>
+                  <div className="text-xs text-gray-400 mt-0.5">per session · {coach.sessionDuration} min</div>
+                  {coach.onLeave ? (
+                    <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mt-3">Not accepting bookings right now</p>
+                  ) : (
+                    <Button fullWidth size="sm" className="mt-3" onClick={handleBookPrivate}>
+                      Book a Private Session
+                    </Button>
+                  )}
+                </div>
+
+                {/* Group training — only when the academy actually offers it. */}
                 {(coach.monthlyPlan || coach.termPlan) && (
-                  <div className="flex items-center justify-center gap-3 mt-2.5 pt-2.5 border-t border-gray-100">
-                    <div className="text-center">
-                      <p className="text-sm font-bold text-gray-700">AED {coach.pricePerHour}</p>
-                      <p className="text-xs text-gray-400">per session</p>
-                    </div>
-                    {coach.termPlan && (
-                      <div className="text-center">
-                        <p className="text-sm font-bold text-gray-700">AED {coach.termPlan.price}</p>
-                        <p className="text-xs text-gray-400">
-                          {coach.termPlan.sessionsIncluded} sessions/term
-                          {!!coach.termPlan.freeSessions && <span className="text-emerald-600"> +{coach.termPlan.freeSessions} free</span>}
-                        </p>
+                  <div className="rounded-xl border border-gray-100 p-4 mt-3">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Group Training</p>
+
+                    {coach.monthlyPlan && coach.termPlan ? (
+                      <div className="grid grid-cols-2 gap-1.5 mb-2">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedGroupPlan('month')}
+                          className={`rounded-lg px-2 py-1.5 text-center border-2 transition-colors ${
+                            selectedGroupPlan === 'month' ? 'border-blue-500 bg-blue-50' : 'border-transparent hover:bg-gray-50'
+                          }`}
+                        >
+                          <p className="text-xs font-bold text-gray-800">Monthly</p>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedGroupPlan('term')}
+                          className={`rounded-lg px-2 py-1.5 text-center border-2 transition-colors ${
+                            selectedGroupPlan === 'term' ? 'border-blue-500 bg-blue-50' : 'border-transparent hover:bg-gray-50'
+                          }`}
+                        >
+                          <p className="text-xs font-bold text-gray-800">3-Month Term</p>
+                        </button>
                       </div>
+                    ) : null}
+
+                    {selectedGroupPlan === 'month' && coach.monthlyPlan ? (
+                      <>
+                        <div className="text-2xl font-black text-blue-600">AED {coach.monthlyPlan.price}</div>
+                        <div className="text-xs text-gray-400 mt-0.5">
+                          per month · {coach.monthlyPlan.sessionsIncluded} sessions
+                          {!!coach.monthlyPlan.freeSessions && <span className="text-emerald-600"> +{coach.monthlyPlan.freeSessions} free</span>}
+                        </div>
+                      </>
+                    ) : selectedGroupPlan === 'term' && coach.termPlan ? (
+                      <>
+                        <div className="text-2xl font-black text-blue-600">AED {coach.termPlan.price}</div>
+                        <div className="text-xs text-gray-400 mt-0.5">
+                          per term · {coach.termPlan.sessionsIncluded} sessions
+                          {!!coach.termPlan.freeSessions && <span className="text-emerald-600"> +{coach.termPlan.freeSessions} free</span>}
+                        </div>
+                      </>
+                    ) : null}
+
+                    {coach.onLeave ? (
+                      <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mt-3">Not accepting enrollments right now</p>
+                    ) : (
+                      <Button fullWidth size="sm" variant="outline" className="mt-3" onClick={handleBookGroup}>
+                        Enroll & Choose Start Date
+                      </Button>
                     )}
                   </div>
                 )}
               </div>
               <div className="space-y-3 mb-6">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-500">Session duration</span>
-                  <span className="font-medium text-gray-800">{coach.sessionDuration} min</span>
-                </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-500">Payment</span>
                   <span className="font-medium text-gray-800">Online (via WhatsApp)</span>
@@ -340,23 +388,18 @@ export function CoachProfilePage() {
                   <span className="font-medium text-gray-800">{coach.location}</span>
                 </div>
               </div>
-              {coach.onLeave ? (
+              {coach.onLeave && (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
                   <p className="font-semibold text-amber-800 text-sm">🌴 Currently on leave</p>
                   <p className="text-xs text-amber-700 mt-1">
                     {coach.name.split(' ')[0]} isn't accepting new bookings right now. Check back soon!
                   </p>
                 </div>
-              ) : (
-                <>
-                  <Button fullWidth size="lg" onClick={handleBook}>
-                    <Calendar className="w-5 h-5" />
-                    Book a Session
-                  </Button>
-                  <p className="text-xs text-center text-gray-400 mt-3">
-                    Free cancellation up to 24 hours before
-                  </p>
-                </>
+              )}
+              {!coach.onLeave && (
+                <p className="text-xs text-center text-gray-400">
+                  Free cancellation up to 24 hours before
+                </p>
               )}
             </Card>
 

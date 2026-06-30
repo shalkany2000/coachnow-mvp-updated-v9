@@ -8,8 +8,14 @@ export interface CancellationOutcome {
   canReschedule: boolean; // rescheduling (no penalty) is only offered in the full-refund window
 }
 
+// Private sessions have a specific start time. Group plans (monthly/term)
+// don't — there's no single "session time" to count down to, just a start
+// date. Treating a missing time as midnight on that date keeps the same
+// tiered policy working correctly for both, instead of producing an
+// invalid Date (and therefore NaN hours, which silently fell through to
+// the harshest "no refund" tier regardless of how much notice was given).
 export function getSessionDateTime(date: string, time: string): Date {
-  return new Date(`${date}T${time}:00`);
+  return new Date(`${date}T${time || '00:00'}:00`);
 }
 
 export function hoursUntil(date: string, time: string): number {

@@ -39,3 +39,14 @@ export function formatRelativeTime(isoTimestamp: string): string {
   if (days < 7) return `${days}d ago`;
   return new Date(isoTimestamp).toLocaleDateString('en-AE', { day: 'numeric', month: 'short' });
 }
+
+// A group plan runs for a fixed window from its start date — 30 days for a
+// monthly package, 90 days for a 3-month term — regardless of how many of
+// the included sessions actually get used in that window. Returns an ISO
+// date string (YYYY-MM-DD).
+export function getPlanExpiryDate(startDate: string, packageType: 'month' | 'term'): string {
+  const days = packageType === 'month' ? 30 : 90;
+  const start = new Date(startDate + 'T00:00:00');
+  start.setDate(start.getDate() + days);
+  return start.toISOString().split('T')[0];
+}

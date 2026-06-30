@@ -135,3 +135,32 @@ describe('resolveActualRefund — the critical "must actually be paid" guard', (
     expect(result.refundCreditAmount).toBe(0);
   });
 });
+
+describe('getCancellationOutcome — group plans (no specific time)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  // Group plans have a start date but no single appointment time, so
+  // `time` is passed in as ''. Before the fix, this produced an invalid
+  // Date and NaN hours, which silently fell through to the harshest
+  // "no refund" tier no matter how much notice was actually given.
+  it('still gives a full refund with plenty of notice, even with an empty time string', () => {
+    const farFutureDate = new Date(NOW.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const outcome = getCancellationOutcome(farFutureDate, '', 550, settings);
+    expect(outcome.tier).toBe('full');
+    expect(outcome.refundCreditAmount).toBe(550);
+    expect(Number.isNaN(outcome.hoursUntilSession)).toBe(false);
+  });
+
+  it('correctly falls to the no-refund tier only when the start date has actually passed', () => {
+    const pastDate = new Date(NOW.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const outcome = getCancellationOutcome(pastDate, '', 550, settings);
+    expect(outcome.tier).toBe('none');
+    expect(Number.isNaN(outcome.hoursUntilSession)).toBe(false);
+  });
+});

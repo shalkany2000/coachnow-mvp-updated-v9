@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { Calendar, Clock, MapPin, FileText, ArrowLeft, CheckCircle, ShieldCheck, MessageCircle } from 'lucide-react';
@@ -11,7 +11,7 @@ import { isSeedCoach, isSportLive } from '../../lib/sports';
 import { Navbar } from '../../components/layout/Navbar';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
-import { formatTime, generateSlots } from '../../utils/time';
+import { formatTime, generateSlots, getPlanExpiryDate } from '../../utils/time';
 import { buildAdminWhatsAppLink, buildWhatsAppLink, buildMapLink, isMapLink, VAT_RATE, SERVICE_FEE_AED, REFERRAL_DISCOUNT_CAP_AED } from '../../lib/config';
 import { formatAcademyLocation, buildAcademyLocationSearchText, normalizeAcademyLocations } from '../../lib/mockData';
 
@@ -20,6 +20,7 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export function BookingPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { getCoach, coaches } = useCoaches();
   const { currentUser } = useAuth();
   const { addBooking, getBookingsForParent } = useBookings();
@@ -28,10 +29,21 @@ export function BookingPage() {
 
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
-  const [packageType, setPackageType] = useState<'session' | 'month' | 'term'>(
-    coach?.monthlyPlan ? 'month' : 'session'
-  );
+  const [packageType, setPackageType] = useState<'session' | 'month' | 'term'>(() => {
+    // Honor the plan the customer already picked on the profile page so the
+    // choice they made carries through instead of silently resetting.
+    const fromUrl = searchParams.get('plan');
+    if (fromUrl === 'month' && coach?.monthlyPlan) return 'month';
+    if (fromUrl === 'term' && coach?.termPlan) return 'term';
+    if (fromUrl === 'session') return 'session';
+    return coach?.monthlyPlan ? 'month' : 'session';
+  });
   const [notes, setNotes] = useState('');
+  // Group plans recur weekly, so instead of one appointment time, the
+  // customer picks one or more weekly (day, time) slots they intend to
+  // attend regularly — e.g. "Mon 5pm" and "Wed 5pm". Stored as
+  // "Day|HH:mm" strings for easy toggling, converted to objects on submit.
+  const [preferredSlotKeys, setPreferredSlotKeys] = useState<string[]>([]);
   const [trainingAddress, setTrainingAddress] = useState(currentUser?.homeAddress || '');
   const [trainingMode, setTrainingMode] = useState<'at_academy' | 'at_home'>(
     coach?.locations && coach.locations.length > 0 ? 'at_academy' : 'at_home'
@@ -56,6 +68,8 @@ export function BookingPage() {
     amountDueNow: number;
     adminMessage: string;
     coachMessage: string;
+    planExpiresAt: string | null;
+    preferredSlots: { day: string; time: string }[];
   } | null>(null);
   const [error, setError] = useState('');
 
@@ -187,6 +201,29 @@ export function BookingPage() {
     ? dayBlocks.flatMap((block) => generateSlots(block.start, block.end, coach.sessionDuration))
     : (!coach.weeklySchedule ? generateSlots(coach.availabilityStart, coach.availabilityEnd, coach.sessionDuration) : []);
 
+  // For group plans, every working day the academy runs is a candidate for
+  // a recurring weekly slot — built the same way single-session times are,
+  // just for every available day at once instead of one selected date.
+  const weeklySlotOptions: { day: string; time: string }[] = coach.weeklySchedule
+    ? Object.entries(coach.weeklySchedule).flatMap(([day, blocks]) =>
+        (blocks || []).flatMap((block) => generateSlots(block.start, block.end, coach.sessionDuration).map((t) => ({ day, time: t })))
+      )
+    : workingDays.flatMap((day) => generateSlots(coach.availabilityStart, coach.availabilityEnd, coach.sessionDuration).map((t) => ({ day, time: t })));
+
+  const togglePreferredSlot = (day: string, t: string) => {
+    const key = `${day}|${t}`;
+    setPreferredSlotKeys((prev) => prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]);
+  };
+  const preferredSlots = preferredSlotKeys.map((k) => {
+    const [day, t] = k.split('|');
+    return { day, time: t };
+  });
+
+  // A group plan's window is fixed from its start date — 30 days for
+  // monthly, 90 for term — independent of how many sessions actually get
+  // used inside it.
+  const planExpiresAt = date && packageType !== 'session' ? getPlanExpiryDate(date, packageType) : null;
+
   const packageLabel = selectedPlan
     ? `${packageType === 'month' ? 'Monthly' : '3-month term'} package — ${selectedPlan.sessionsIncluded}${selectedPlan.freeSessions ? ` + ${selectedPlan.freeSessions} free` : ''} sessions`
     : 'Single session';
@@ -196,10 +233,14 @@ export function BookingPage() {
     ? formatAcademyLocation(selectedAcademyLocation)
     : trainingAddress;
 
-  const adminMessage = `Hi, I just booked a session on CoachNow and I'd like to pay.\n\nCoach: ${coach.name}\nSport: ${coach.sportType}\nPlan: ${packageLabel}\nDate: ${date}\nTime: ${time ? formatTime(time) : ''}\n${packageType === 'session' ? `Duration: ${coach.sessionDuration} min\n` : ''}${discountApplies ? `Session price: AED ${originalPrice} - ${discountLabel} = AED ${finalPrice}\n` : `Session price: AED ${finalPrice}\n`}Service fee: AED ${serviceFee}\nVAT (5%): AED ${vatAmount}\n${creditApplied > 0 ? `Subtotal: AED ${totalCharged}\nCredit applied: -AED ${creditApplied}\n` : ''}Total to pay: AED ${amountDueNow}`;
+  const preferredSlotsText = preferredSlots.length > 0
+    ? preferredSlots.map((s) => `${s.day} ${formatTime(s.time)}`).join(', ')
+    : '';
+
+  const adminMessage = `Hi, I just booked a session on CoachNow and I'd like to pay.\n\nCoach: ${coach.name}\nSport: ${coach.sportType}\nPlan: ${packageLabel}\nDate: ${date}\n${packageType === 'session' ? `Time: ${time ? formatTime(time) : ''}\nDuration: ${coach.sessionDuration} min\n` : `Preferred slots: ${preferredSlotsText}\nValid until: ${planExpiresAt || ''}\n`}${discountApplies ? `Session price: AED ${originalPrice} - ${discountLabel} = AED ${finalPrice}\n` : `Session price: AED ${finalPrice}\n`}Service fee: AED ${serviceFee}\nVAT (5%): AED ${vatAmount}\n${creditApplied > 0 ? `Subtotal: AED ${totalCharged}\nCredit applied: -AED ${creditApplied}\n` : ''}Total to pay: AED ${amountDueNow}`;
 
   const coachMessage = currentUser
-    ? `Hi ${coach.name}, ${currentUser.name} just booked a session with you on CoachNow 🎉\n\nSport: ${coach.sportType}\nPlan: ${packageLabel}\nDate: ${date ? new Date(date).toLocaleDateString('en-AE', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}\nTime: ${time ? formatTime(time) : ''}\n${packageType === 'session' ? `Duration: ${coach.sessionDuration} min\n` : ''}${finalTrainingAddress ? `${trainingMode === 'at_academy' ? 'Location' : 'Customer address'}: ${finalTrainingAddress}\n` : ''}\nPlease accept or decline this request from your CoachNow dashboard.`
+    ? `Hi ${coach.name}, ${currentUser.name} just ${packageType === 'session' ? 'booked a session' : 'enrolled in your group training'} with you on CoachNow 🎉\n\nSport: ${coach.sportType}\nPlan: ${packageLabel}\nDate: ${date ? new Date(date).toLocaleDateString('en-AE', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}\n${packageType === 'session' ? `Time: ${time ? formatTime(time) : ''}\nDuration: ${coach.sessionDuration} min\n` : `Preferred slots: ${preferredSlotsText}\nValid until: ${planExpiresAt || ''}\n`}${finalTrainingAddress ? `${trainingMode === 'at_academy' ? 'Location' : 'Customer address'}: ${finalTrainingAddress}\n` : ''}\nPlease accept or decline this request from your CoachNow dashboard.`
     : '';
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -207,7 +248,8 @@ export function BookingPage() {
     if (!currentUser) { navigate('/login'); return; }
     if (!date) { setError('Please select a date.'); return; }
     if (!isDayAvailable) { setError(`${coach.name} isn't available on ${selectedDayName}s. Please pick one of their available days.`); return; }
-    if (!time) { setError('Please select a time slot.'); return; }
+    if (packageType === 'session' && !time) { setError('Please select a time slot.'); return; }
+    if (packageType !== 'session' && preferredSlots.length === 0) { setError('Please select at least one preferred weekly slot.'); return; }
     setLoading(true); setError('');
     try {
       // Snapshot everything now, while the discount calculation is still
@@ -216,7 +258,7 @@ export function BookingPage() {
       const summary = {
         discountApplies, originalPrice, discountAmount, discountLabel,
         finalPrice, serviceFee, vatAmount, creditApplied, amountDueNow,
-        adminMessage, coachMessage,
+        adminMessage, coachMessage, planExpiresAt, preferredSlots,
       };
 
       await addBooking({
@@ -243,6 +285,8 @@ export function BookingPage() {
         ...(finalTrainingAddress.trim() ? { trainingAddress: finalTrainingAddress.trim() } : {}),
         ...(packageType !== 'session' ? { packageType } : {}),
         ...(selectedPlan ? { sessionsIncluded: selectedPlan.sessionsIncluded, ...(selectedPlan.freeSessions ? { freeSessions: selectedPlan.freeSessions } : {}) } : {}),
+        ...(planExpiresAt ? { planExpiresAt } : {}),
+        ...(preferredSlots.length > 0 ? { preferredSlots } : {}),
         ...(creditApplied > 0 ? { creditApplied } : {}),
         ...(discountApplies ? {
           originalPrice,
@@ -296,6 +340,7 @@ export function BookingPage() {
       finalPrice: confirmedFinalPrice, serviceFee: confirmedServiceFee, vatAmount: confirmedVatAmount,
       creditApplied: confirmedCreditApplied, amountDueNow: confirmedAmountDueNow,
       adminMessage: confirmedAdminMessage, coachMessage: confirmedCoachMessage,
+      planExpiresAt: confirmedPlanExpiresAt, preferredSlots: confirmedPreferredSlots,
     } = confirmedSummary;
     return (
       <div className="min-h-screen bg-gray-50">
@@ -318,17 +363,37 @@ export function BookingPage() {
                 <span className="font-semibold text-gray-800">{coach.name}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Date</span>
+                <span className="text-gray-500">{packageType === 'session' ? 'Date' : 'Start Date'}</span>
                 <span className="font-semibold text-gray-800">{new Date(date).toLocaleDateString('en-AE', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Time</span>
-                <span className="font-semibold text-gray-800">{formatTime(time)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Duration</span>
-                <span className="font-semibold text-gray-800">{coach.sessionDuration} minutes</span>
-              </div>
+              {packageType === 'session' ? (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Time</span>
+                    <span className="font-semibold text-gray-800">{formatTime(time)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Duration</span>
+                    <span className="font-semibold text-gray-800">{coach.sessionDuration} minutes</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Preferred slots</span>
+                    <span className="font-semibold text-gray-800 text-right">
+                      {confirmedPreferredSlots.map((s) => `${s.day} ${formatTime(s.time)}`).join(', ')}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Valid until</span>
+                    <span className="font-semibold text-gray-800">
+                      {confirmedPlanExpiresAt && new Date(confirmedPlanExpiresAt).toLocaleDateString('en-AE', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      <span className="text-gray-400 font-normal"> ({packageType === 'month' ? '30 days' : '90 days'})</span>
+                    </span>
+                  </div>
+                </>
+              )}
               {confirmedDiscountApplies && (
                 <>
                   <div className="flex justify-between text-sm">
@@ -413,7 +478,9 @@ export function BookingPage() {
           Back to Profile
         </button>
 
-        <h1 className="text-2xl font-black text-gray-900 mb-6">Book a Session</h1>
+        <h1 className="text-2xl font-black text-gray-900 mb-6">
+          {packageType === 'session' ? 'Book a Session' : 'Enroll in Group Training'}
+        </h1>
 
         {discountApplies && (
           <div className="bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl px-5 py-4 mb-6 flex items-center gap-3 shadow-sm">
@@ -444,8 +511,19 @@ export function BookingPage() {
               {/* Package Type */}
               {(coach.monthlyPlan || coach.termPlan) && (
                 <Card>
-                  <h2 className="font-bold text-gray-900 mb-3">Choose Your Plan</h2>
+                  <h2 className="font-bold text-gray-900 mb-1">Choose Your Plan</h2>
+                  <p className="text-xs text-gray-400 mb-3">Private 1-to-1 coaching, or group training with other kids.</p>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setPackageType('session')}
+                      className={`text-left p-3 rounded-xl border-2 transition-all ${
+                        packageType === 'session' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <p className="text-sm font-bold text-gray-900">Private 1-to-1</p>
+                      <p className="text-xs text-gray-500 mt-0.5">AED {coach.pricePerHour} / session</p>
+                    </button>
                     {coach.monthlyPlan && (
                       <button
                         type="button"
@@ -454,7 +532,7 @@ export function BookingPage() {
                           packageType === 'month' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
                         }`}
                       >
-                        <p className="text-sm font-bold text-gray-900">Monthly</p>
+                        <p className="text-sm font-bold text-gray-900">Group · Monthly</p>
                         <p className="text-xs text-gray-500 mt-0.5">AED {coach.monthlyPlan.price} · {coach.monthlyPlan.sessionsIncluded} sessions</p>
                         {!!coach.monthlyPlan.freeSessions && (
                           <p className="text-xs text-emerald-600 font-semibold mt-0.5">+{coach.monthlyPlan.freeSessions} free</p>
@@ -469,23 +547,13 @@ export function BookingPage() {
                           packageType === 'term' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
                         }`}
                       >
-                        <p className="text-sm font-bold text-gray-900">3-Month Term</p>
+                        <p className="text-sm font-bold text-gray-900">Group · 3-Month Term</p>
                         <p className="text-xs text-gray-500 mt-0.5">AED {coach.termPlan.price} · {coach.termPlan.sessionsIncluded} sessions</p>
                         {!!coach.termPlan.freeSessions && (
                           <p className="text-xs text-emerald-600 font-semibold mt-0.5">+{coach.termPlan.freeSessions} free</p>
                         )}
                       </button>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => setPackageType('session')}
-                      className={`text-left p-3 rounded-xl border-2 transition-all ${
-                        packageType === 'session' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <p className="text-sm font-bold text-gray-900">Single Session</p>
-                      <p className="text-xs text-gray-500 mt-0.5">AED {coach.pricePerHour} / session</p>
-                    </button>
                   </div>
                   {selectedPlan && (
                     <p className="text-xs text-gray-500 mt-3 bg-gray-50 rounded-lg px-3 py-2">
@@ -525,39 +593,114 @@ export function BookingPage() {
                     {coach.name} doesn't coach on {selectedDayName}s. Available days: {workingDays.join(', ')}.
                   </p>
                 )}
+                {packageType !== 'session' && planExpiresAt && (
+                  <p className="text-xs text-blue-600 bg-blue-50 rounded-lg px-3 py-2 mt-2 font-medium">
+                    This {packageType === 'month' ? 'monthly plan' : 'term plan'} runs for {packageType === 'month' ? '30' : '90'} days
+                    — valid through {new Date(planExpiresAt).toLocaleDateString('en-AE', { day: 'numeric', month: 'long', year: 'numeric' })}.
+                  </p>
+                )}
                 <p className="text-xs text-gray-400 mt-2">
                   {coach.name.split(' ')[0]} coaches on {workingDays.join(', ')}.
                 </p>
               </Card>
 
-              {/* Time */}
-              <Card>
-                <h2 className="font-bold text-gray-900 flex items-center gap-2 mb-4">
-                  <Clock className="w-5 h-5 text-blue-600" />
-                  {packageType === 'session' ? 'Select Time' : 'Preferred Start Time'}
-                </h2>
-                <p className="text-xs text-gray-400 mb-3">
-                  {dayBlocks && dayBlocks.length > 0
-                    ? `Available ${dayBlocks.map(b => `${formatTime(b.start)}–${formatTime(b.end)}`).join(', ')} on ${selectedDayName}`
-                    : 'Pick a date above to see available times'}
-                </p>
-                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                  {timeSlots.map(slot => (
-                    <button
-                      key={slot}
-                      type="button"
-                      onClick={() => setTime(slot)}
-                      className={`px-2 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                        time === slot
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'bg-gray-50 text-gray-700 border border-gray-200 hover:border-blue-300 hover:bg-blue-50'
-                      }`}
-                    >
-                      {formatTime(slot)}
-                    </button>
-                  ))}
-                </div>
-              </Card>
+              {/* Time — private sessions only. */}
+              {packageType === 'session' && (
+                <Card>
+                  <h2 className="font-bold text-gray-900 flex items-center gap-2 mb-4">
+                    <Clock className="w-5 h-5 text-blue-600" />
+                    Select Time
+                  </h2>
+                  <p className="text-xs text-gray-400 mb-3">
+                    {dayBlocks && dayBlocks.length > 0
+                      ? `Available ${dayBlocks.map(b => `${formatTime(b.start)}–${formatTime(b.end)}`).join(', ')} on ${selectedDayName}`
+                      : 'Pick a date above to see available times'}
+                  </p>
+                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                    {timeSlots.map(slot => (
+                      <button
+                        key={slot}
+                        type="button"
+                        onClick={() => setTime(slot)}
+                        className={`px-2 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                          time === slot
+                            ? 'bg-blue-600 text-white shadow-sm'
+                            : 'bg-gray-50 text-gray-700 border border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                        }`}
+                      >
+                        {formatTime(slot)}
+                      </button>
+                    ))}
+                  </div>
+                </Card>
+              )}
+
+              {/* Preferred weekly slots — group plans only. The customer
+                  picks which recurring weekly time(s) they intend to
+                  attend; the academy confirms the exact schedule with them
+                  once the package is set up. */}
+              {packageType !== 'session' && (
+                <Card>
+                  <h2 className="font-bold text-gray-900 flex items-center gap-2 mb-1">
+                    <Clock className="w-5 h-5 text-blue-600" />
+                    Preferred Weekly Slots
+                  </h2>
+                  <p className="text-xs text-gray-400 mb-3">
+                    Pick the day(s) and time(s) you'd like to attend regularly. {coach.name.split(' ')[0]} will confirm your exact schedule.
+                  </p>
+                  <div className="space-y-3">
+                    {workingDays.map((day) => {
+                      const options = weeklySlotOptions.filter((s) => s.day === day);
+                      if (options.length === 0) return null;
+                      return (
+                        <div key={day}>
+                          <p className="text-xs font-bold text-gray-700 mb-1.5">{day}</p>
+                          <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                            {options.map(({ time: t }) => {
+                              const key = `${day}|${t}`;
+                              const isSelected = preferredSlotKeys.includes(key);
+                              return (
+                                <button
+                                  key={key}
+                                  type="button"
+                                  onClick={() => togglePreferredSlot(day, t)}
+                                  className={`px-2 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                                    isSelected
+                                      ? 'bg-blue-600 text-white shadow-sm'
+                                      : 'bg-gray-50 text-gray-700 border border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                                  }`}
+                                >
+                                  {formatTime(t)}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {preferredSlots.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-gray-100">
+                      {preferredSlots.map((s) => (
+                        <span
+                          key={`${s.day}|${s.time}`}
+                          className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 text-xs font-semibold px-2.5 py-1.5 rounded-lg"
+                        >
+                          {s.day} {formatTime(s.time)}
+                          <button
+                            type="button"
+                            onClick={() => togglePreferredSlot(s.day, s.time)}
+                            className="text-blue-400 hover:text-blue-700"
+                            aria-label={`Remove ${s.day} ${formatTime(s.time)}`}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              )}
 
               {/* Location */}
               <Card>
@@ -693,7 +836,7 @@ export function BookingPage() {
                 </div>
               </Card>
 
-              <Button type="submit" fullWidth size="lg" loading={loading} disabled={!isDayAvailable}>
+              <Button type="submit" fullWidth size="lg" loading={loading} disabled={!isDayAvailable || (packageType !== 'session' && preferredSlots.length === 0)}>
                 Send Booking Request
               </Button>
             </form>
@@ -725,14 +868,33 @@ export function BookingPage() {
                   <span className="text-gray-500">Date</span>
                   <span className="font-medium text-gray-800">{date ? new Date(date).toLocaleDateString('en-AE', { day: 'numeric', month: 'short' }) : '—'}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Time</span>
-                  <span className="font-medium text-gray-800">{time ? formatTime(time) : '—'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Duration</span>
-                  <span className="font-medium text-gray-800">{coach.sessionDuration} minutes</span>
-                </div>
+                {packageType === 'session' ? (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Time</span>
+                      <span className="font-medium text-gray-800">{time ? formatTime(time) : '—'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Duration</span>
+                      <span className="font-medium text-gray-800">{coach.sessionDuration} minutes</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-gray-500 flex-shrink-0">Slots</span>
+                      <span className="font-medium text-gray-800 text-right">
+                        {preferredSlots.length > 0 ? preferredSlots.map((s) => `${s.day} ${formatTime(s.time)}`).join(', ') : '—'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Valid until</span>
+                      <span className="font-medium text-gray-800">
+                        {planExpiresAt ? new Date(planExpiresAt).toLocaleDateString('en-AE', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                      </span>
+                    </div>
+                  </>
+                )}
                 {discountApplies && (
                   <div className="bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 flex items-center gap-2">
                     <span className="text-base">{usingReferralDiscount ? '🎁' : '🎉'}</span>

@@ -29,8 +29,11 @@ export function BookingCard({ booking, role, onAccept, onReject, onComplete, onM
   const status = statusConfig[booking.status];
   const [showReceipt, setShowReceipt] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const isGroupPlan = !!booking.packageType && booking.packageType !== 'session';
   const isUpcoming = (booking.status === 'pending' || booking.status === 'accepted')
-    && new Date(`${booking.date}T${booking.time}:00`).getTime() > Date.now();
+    && (isGroupPlan
+      ? !booking.planExpiresAt || new Date(`${booking.planExpiresAt}T23:59:59`).getTime() > Date.now()
+      : new Date(`${booking.date}T${booking.time}:00`).getTime() > Date.now());
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -79,16 +82,34 @@ export function BookingCard({ booking, role, onAccept, onReject, onComplete, onM
       <div className="grid grid-cols-2 gap-3">
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <Calendar className="w-4 h-4 text-gray-400 flex-shrink-0" />
-          <span>{formatDate(booking.date)}</span>
+          <span>{isGroupPlan ? 'Starts ' : ''}{formatDate(booking.date)}</span>
         </div>
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Clock className="w-4 h-4 text-gray-400 flex-shrink-0" />
-          <span>{formatTime(booking.time)} · {booking.duration} min</span>
-        </div>
+        {isGroupPlan ? (
+          booking.planExpiresAt && (
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <Clock className="w-4 h-4 text-gray-400 flex-shrink-0" />
+              <span>Valid until {formatDate(booking.planExpiresAt)}</span>
+            </div>
+          )
+        ) : (
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <Clock className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            <span>{formatTime(booking.time)} · {booking.duration} min</span>
+          </div>
+        )}
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
           <span>{booking.location}</span>
         </div>
+        {isGroupPlan && booking.preferredSlots && booking.preferredSlots.length > 0 && (
+          <div className="col-span-2 flex flex-wrap gap-1.5">
+            {booking.preferredSlots.map((s) => (
+              <span key={`${s.day}|${s.time}`} className="inline-flex items-center text-xs font-medium px-2 py-1 rounded-lg bg-gray-50 text-gray-600 border border-gray-100">
+                {s.day} {formatTime(s.time)}
+              </span>
+            ))}
+          </div>
+        )}
         {booking.trainingAddress && (
           <div className="flex items-start gap-2 text-sm text-gray-600 bg-blue-50 rounded-lg px-2.5 py-2 -mx-0.5">
             <Navigation className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
