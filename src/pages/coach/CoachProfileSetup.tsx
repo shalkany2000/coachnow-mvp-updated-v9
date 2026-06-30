@@ -60,6 +60,7 @@ export function CoachProfileSetup() {
     sportType: existingCoach?.sportType || '',
     pricePerHour: existingCoach?.pricePerHour?.toString() || '',
     isPrivateTraining: existingCoach?.isPrivateTraining || false,
+    showPrivateOnListingCard: existingCoach?.showPrivateOnListingCard || false,
     monthlyEnabled: !!existingCoach?.monthlyPlan,
     monthlyPrice: existingCoach?.monthlyPlan?.price?.toString() || '',
     monthlySessions: existingCoach?.monthlyPlan?.sessionsIncluded?.toString() || '8',
@@ -87,6 +88,7 @@ export function CoachProfileSetup() {
         sportType: existingCoach.sportType,
         pricePerHour: existingCoach.pricePerHour.toString(),
         isPrivateTraining: existingCoach.isPrivateTraining || false,
+        showPrivateOnListingCard: existingCoach.showPrivateOnListingCard || false,
         monthlyEnabled: !!existingCoach.monthlyPlan,
         monthlyPrice: existingCoach.monthlyPlan?.price?.toString() || '',
         monthlySessions: existingCoach.monthlyPlan?.sessionsIncluded?.toString() || '8',
@@ -227,6 +229,7 @@ export function CoachProfileSetup() {
         sportType: form.sportType,
         pricePerHour: parseInt(form.pricePerHour) || 0,
         isPrivateTraining: form.isPrivateTraining,
+        showPrivateOnListingCard: form.showPrivateOnListingCard,
         ...(form.monthlyEnabled ? {
           monthlyPlan: {
             price: parseInt(form.monthlyPrice) || 0,
@@ -530,6 +533,27 @@ export function CoachProfileSetup() {
                   This is <strong>private 1-to-1 training</strong> (not a group class)
                 </span>
               </label>
+
+              {form.isPrivateTraining && (
+                <label className="flex items-center gap-2.5 cursor-pointer mt-3">
+                  <input
+                    type="checkbox"
+                    checked={form.showPrivateOnListingCard}
+                    onChange={(e) => setForm(p => ({ ...p, showPrivateOnListingCard: e.target.checked }))}
+                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                  />
+                  <span className="text-sm text-gray-700">
+                    Also show the <strong>"Private 1-to-1"</strong> badge and per-session price on your search results card
+                  </span>
+                </label>
+              )}
+              <p className="text-xs text-gray-400 mt-1.5">
+                {form.isPrivateTraining && !form.showPrivateOnListingCard
+                  ? "Off by default to keep your card simple — it'll still show on your full profile page either way."
+                  : !form.isPrivateTraining
+                  ? 'Your search card will only show your group plan pricing, if you set one up below.'
+                  : ''}
+              </p>
 
               {/* Monthly Plan */}
               <div className="mt-5 pt-5 border-t border-gray-100">

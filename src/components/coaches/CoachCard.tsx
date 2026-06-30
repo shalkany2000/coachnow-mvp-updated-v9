@@ -40,7 +40,7 @@ export function CoachCard({ coach }: { coach: Coach }) {
             <div>
               <h3 className="font-bold text-gray-900 text-base leading-tight">{coach.name}</h3>
               <p className="text-sm text-gray-500 mt-0.5">{coach.experience}</p>
-              {coach.isPrivateTraining && (
+              {coach.isPrivateTraining && coach.showPrivateOnListingCard && (
                 <p className="text-xs text-purple-600 font-semibold mt-0.5">Private 1-to-1 Training</p>
               )}
             </div>
@@ -49,7 +49,9 @@ export function CoachCard({ coach }: { coach: Coach }) {
                 <>
                   <p className="text-xl font-bold text-blue-600">AED {coach.monthlyPlan.price}</p>
                   <p className="text-xs text-gray-400">per month</p>
-                  <p className="text-xs text-gray-400">AED {coach.pricePerHour}/session</p>
+                  {coach.showPrivateOnListingCard && (
+                    <p className="text-xs text-gray-400">AED {coach.pricePerHour}/session</p>
+                  )}
                 </>
               ) : (
                 <>

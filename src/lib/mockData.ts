@@ -122,6 +122,7 @@ export interface Coach {
   monthlyPlan?: PricingPlan | null; // optional monthly package - sessions included is academy-editable, not fixed
   termPlan?: PricingPlan | null; // optional 3-month term package
   isPrivateTraining?: boolean; // shows a "Private 1-to-1 Training" label near the price
+  showPrivateOnListingCard?: boolean; // academy's choice — whether the compact search-results card also shows the private 1-to-1 badge + per-session price, on top of whatever group pricing is shown. Defaults to hidden, so the card stays simple unless the academy opts in.
   location: string;
   rating: number;
   reviewCount: number;
